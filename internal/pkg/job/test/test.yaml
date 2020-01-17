@@ -1,0 +1,32 @@
+project: KarolsChecks
+up_jobs:
+  bitgrip_checker:
+    url: https://www.bitgrip.de/kontakt
+    method: GET
+    expected_code: 301
+    headers:
+      Authorization: 'Basic ABC=='
+      Origin: 'https://example.com'
+    tags:
+      A: x
+      B: y
+      C: z
+
+  other1:
+    url: https://www.bitgrip.de/basic-auth
+    host: bla.com
+    method: GET
+
+  other2:
+    url: https://ci.bitgrip.de/basic-auth
+    method: GET
+
+
+dns_jobs:
+  bitgrip_dns_check:
+    fqdn: 'another.example.org'
+    ips:
+      - '192.168.0.1'
+      - '192.168.0.2'
+      - '192.168.0.3'
+      - '192.168.0.4'
