@@ -1,0 +1,9 @@
+uptrack:
+  default_interval: 30
+
+  datadog:
+    credentials: '/etc/uptrack/datadog/credentials'
+
+  prometheus:
+    port: 2222
+    endpoint: /metrics

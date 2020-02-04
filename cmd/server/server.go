@@ -15,12 +15,12 @@
 package server
 
 import (
-	"log"
-
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/ctl"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
 )
 
 var (
@@ -58,10 +58,16 @@ func start(cmd *cobra.Command, args []string) {
 }
 
 func init() {
+	serverCmd.PersistentFlags().String("config-file", ".", "Path of configuration file")
 	serverCmd.PersistentFlags().String("jobs-dir", "/etc/uptrack/jobs.d", "Directory to find job descriptors")
 	serverCmd.PersistentFlags().Int("default-interval", 10, "Default interval to execute job")
 	serverCmd.PersistentFlags().String("datadog-credentials", "/etc/uptrack/datadog/credentials", "File containing datadog credentials")
-	serverCmd.PersistentFlags().String("prometheus-scrape", ":9001/metrics", "Endpoint prometheus can scrape from")
+	serverCmd.PersistentFlags().String("prometheus-port", "9001", "Port exposed by prometheus")
+	serverCmd.PersistentFlags().String("prometheus-endpoint", "metrics", "Prometheus Endpoint")
+
+	//Server Configuration
+	viper.BindPFlag("uptrack.config_file", serverCmd.PersistentFlags().Lookup("config-file"))
+	viper.BindEnv("uptrack.config_file", "UPTRACK_CONFIG_FILE")
 
 	viper.BindPFlag("uptrack.jobs_dir", serverCmd.PersistentFlags().Lookup("jobs-dir"))
 	viper.BindEnv("uptrack.jobs_dir", "UPTRACK_JOBS_DIR")
@@ -72,8 +78,17 @@ func init() {
 	viper.BindPFlag("uptrack.datadog.credentials", serverCmd.PersistentFlags().Lookup("datadog-credentials"))
 	viper.BindEnv("uptrack.datadog.credentials", "UPTRACK_DATADOG_CREDENTIALS")
 
-	viper.BindPFlag("uptrack.prometheus.scrape", serverCmd.PersistentFlags().Lookup("prometheus-scrape"))
-	viper.BindEnv("uptrack.prometheus.scrape", "UPTRACK_PROMETHEUS_SCRAPE")
+	viper.BindPFlag("uptrack.prometheus.port", serverCmd.PersistentFlags().Lookup("prometheus-port"))
+	viper.BindEnv("uptrack.prometheus.port", "UPTRACK_PROMETHEUS_PORT")
 
+	viper.BindPFlag("uptrack.prometheus.endpoint", serverCmd.PersistentFlags().Lookup("prometheus-endpoint"))
+	viper.BindEnv("uptrack.prometheus.endpoint", "UPTRACK_PROMETHEUS_ENDPOINT")
+
+	viper.SetConfigFile(viper.GetString("uptrack.config_file"))
+
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		log.Panic(fmt.Sprintf("Fatal error config file: %s \n", err))
+	}
 	serverCmd.AddCommand(startCmd)
 }

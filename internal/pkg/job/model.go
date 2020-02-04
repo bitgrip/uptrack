@@ -7,7 +7,7 @@ type Descriptor struct {
 	DNSChecks []DNSCheck `json:"dns_checks,omitempty" yaml:"dns_checks,omitempty"`
 }
 
-// UpCheck is a check is a HTTP endpoint is up and able to server required method
+// UpCheck is a check if a HTTP endpoint is up and able to server required method
 type UpCheck struct {
 	Method     Method   `json:"method,omitempty" yaml:"method,omitempty"`
 	URI        string   `json:"uri,omitempty" yaml:"uri,omitempty"`

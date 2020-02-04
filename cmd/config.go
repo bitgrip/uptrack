@@ -35,6 +35,10 @@ func (config) DatadogCredentials() string {
 	return viper.GetString("uptrack.datadog.credentials")
 }
 
-func (config) PrometheusScrape() string {
-	return viper.GetString("uptrack.prometheus.scrape")
+func (config) PrometheusEndpoint() string {
+	return viper.GetString("uptrack.prometheus.endpoint")
+}
+
+func (config) PrometheusPort() int {
+	return viper.GetInt("uptrack.prometheus.port")
 }

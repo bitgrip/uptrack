@@ -19,5 +19,6 @@ type Config interface {
 	JobConfigDir() string
 	DefaultInterval() int
 	DatadogCredentials() string
-	PrometheusScrape() string
+	PrometheusEndpoint() string
+	PrometheusPort() int
 }

@@ -16,10 +16,13 @@ package ctl
 
 import (
 	"fmt"
+	"strconv"
 
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 // StartUpTrackServer is initialising the UpTrack Server
@@ -31,11 +34,21 @@ import (
 func StartUpTrackServer(config config.Config) error {
 	logrus.Info("Start UpTrack server")
 	logrus.Info(fmt.Sprintf("Use default interval %v", config.DefaultInterval()))
-	logrus.Info(fmt.Sprintf("Load configs from %s\n", config.JobConfigDir()))
+	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
+
+	endpoint := config.PrometheusEndpoint()
+	port := strconv.Itoa(config.PrometheusPort())
+	uri := fmt.Sprintf(":" + port + "/" + endpoint)
 	registry := metrics.NewCombinedRegistry(
-		metrics.NewPrometheusRegistry(config.PrometheusScrape()),
+		metrics.NewPrometheusRegistry(uri),
 		metrics.NewDatadogRegistry(config.DatadogCredentials()),
 	)
+	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
 	logrus.Info(registry)
+	http.Handle(endpoint, promhttp.Handler())
+	err := http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	return nil
 }
