@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/prometheus/client_golang v1.4.0
+	github.com/prometheus/common v0.9.1
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect

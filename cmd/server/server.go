@@ -35,8 +35,6 @@ var (
 		Long:  startLongDescription,
 		Run:   start,
 	}
-	showFile    string
-	valuesFiles []string
 	rootConfig  config.Config
 	initCommand func()
 )

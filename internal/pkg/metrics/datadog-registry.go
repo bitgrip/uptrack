@@ -12,23 +12,23 @@ func NewDatadogRegistry(datadogCredentials string) Registry {
 func (r *datadogRegistry) IncExecution(job string) {
 }
 
-func (r *datadogRegistry) IncCanConnect(job string, uri string) {
+func (r *datadogRegistry) IncCanConnect(job string) {
 }
 
-func (r *datadogRegistry) IncCanNotConnect(job string, uri string) {
+func (r *datadogRegistry) IncCanNotConnect(job string) {
 }
 
-func (r *datadogRegistry) SetSSLDaysLeft(job string, uri string, daysLeft int64) {
+func (r *datadogRegistry) SetSSLDaysLeft(job string, daysLeft float64) {
 }
 
-func (r *datadogRegistry) SetConnectTime(job string, uri string, millis int64) {
+func (r *datadogRegistry) SetConnectTime(job string, millis int64) {
 }
 
-func (r *datadogRegistry) SetTTFB(job string, uri string, millis int64) {
+func (r *datadogRegistry) SetTTFB(job string, millis int64) {
 }
 
-func (r *datadogRegistry) SetRequestTime(job string, uri string, millis int64) {
+func (r *datadogRegistry) SetRequestTime(job string, millis int64) {
 }
 
-func (r *datadogRegistry) SetBytesReceived(job string, uri string, bytes int64) {
+func (r *datadogRegistry) SetBytesReceived(job string, bytes int64) {
 }

@@ -1,0 +1,16 @@
+base_url:
+up_jobs:
+  bitgrip_checker:
+    description: 'Came for the money, stayed for the story'
+    url_suffix: https://www.bitgrip.de/kontakt
+    method: GET
+    expected_code: 301
+  POST_checker:
+    description: 'XXX'
+    url_suffix: https://reqbin.com/echo/post/json
+    method: POST
+    body: 'abc'
+
+
+
+

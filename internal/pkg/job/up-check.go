@@ -1,19 +1,26 @@
 package job
 
-import "fmt"
+import (
+	"encoding/base64"
+	"fmt"
+	"io"
+)
 
 import "strings"
 
 // Body is taken from plain body or transformed from base64 body if exists
-func (check UpCheck) Body() []byte {
+func (j *UpJob) Body() io.Reader {
+	if len(j.PlainBody) > 0 {
+		return strings.NewReader(j.PlainBody)
+	}
+	if len(j.Base64Body) > 0 {
+		decoded, _ := base64.StdEncoding.DecodeString(j.Base64Body)
+		return strings.NewReader(string(decoded))
+	}
 	return nil
 }
 
 // URL combines the current URI with the given baseURL if not empty
-func (check UpCheck) URL(baseURL string) string {
-	return fmt.Sprintf(
-		"%s%s",
-		strings.TrimSpace(baseURL),
-		strings.TrimSpace(check.URI),
-	)
+func (j *UpJob) ConcatUrl(baseURL string) {
+	j.URL = fmt.Sprintf("%s%s", strings.TrimSpace(baseURL), strings.TrimSpace(j.URLSuffix))
 }
