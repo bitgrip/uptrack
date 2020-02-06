@@ -1,9 +1,8 @@
 uptrack:
-  default_interval: 30
-
+  default_interval: 10
+  jobs_config: './config/jobs.yaml'
   datadog:
     credentials: '/etc/uptrack/datadog/credentials'
-
   prometheus:
     port: 2222
     endpoint: /metrics

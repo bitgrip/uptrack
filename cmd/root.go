@@ -50,11 +50,20 @@ func Execute() {
 func init() {
 
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.uptrack.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "./config/uptrack.yaml", "Configuration file for uptrack application ")
 	rootCmd.PersistentFlags().IntVarP(&logLevel, "verbosity", "v", 0, "verbosity level to use")
 	rootCmd.PersistentFlags().BoolVar(&logJSON, "log-json", false, "if to log using json format")
 
-	rootCmd.AddCommand(server.BaseCommand(rancherConfig, initSubCommand))
+	//Application Configuration via Environment Variables
+	viper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
+	viper.BindEnv("verbosity", "VERBOSITY")
+	logLevel = viper.GetInt("verbosity")
+
+	viper.BindPFlag("log_json", rootCmd.PersistentFlags().Lookup("log-json"))
+	viper.BindEnv("log_json", "LOG_JSON")
+	logJSON = viper.GetBool("log_json")
+
+	rootCmd.AddCommand(server.BaseCommand(uptrackConfig, initSubCommand))
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(genDocCmd)
 	rootCmd.AddCommand(completionCmd)

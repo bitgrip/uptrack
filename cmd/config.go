@@ -18,13 +18,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-var rancherConfig = config{}
+var uptrackConfig = config{}
 
 type config struct {
 }
 
 func (config) JobConfigDir() string {
-	return viper.GetString("uptrack.jobs_dir")
+	return viper.GetString("uptrack.jobs_config")
 }
 
 func (config) DefaultInterval() int {

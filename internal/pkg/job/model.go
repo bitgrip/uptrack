@@ -2,13 +2,14 @@ package job
 
 // Descriptor represents a JOB document
 type Descriptor struct {
-	BaseURL   string     `json:"base_url,omitempty" yaml:"base_url,omitempty"`
-	UpChecks  []UpCheck  `json:"up_checks,omitempty" yaml:"up_checks,omitempty"`
-	DNSChecks []DNSCheck `json:"dns_checks,omitempty" yaml:"dns_checks,omitempty"`
+	BaseURL   string             `json:"base_url,omitempty" yaml:"base_url,omitempty"`
+	UpChecks  map[string]UpCheck `json:"up_checks,omitempty" yaml:"up_checks,omitempty"`
+	DNSChecks []DNSCheck         `json:"dns_checks,omitempty" yaml:"dns_checks,omitempty"`
 }
 
-// UpCheck is a check if a HTTP endpoint is up and able to server required method
+// UpCheck is a check if a HTTP endpoint is up and able to serve required method
 type UpCheck struct {
+	Name       string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Method     Method   `json:"method,omitempty" yaml:"method,omitempty"`
 	URI        string   `json:"uri,omitempty" yaml:"uri,omitempty"`
 	Headers    []Header `json:"headers,omitempty" yaml:"headers,omitempty"`

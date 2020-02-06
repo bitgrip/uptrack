@@ -12,7 +12,7 @@ Interaction to the UpTrack server
       --datadog-credentials string   File containing datadog credentials (default "/etc/uptrack/datadog/credentials")
       --default-interval int         Default interval to execute job (default 10)
   -h, --help                         help for server
-      --jobs-dir string              Directory to find job descriptors (default "/etc/uptrack/jobs.d")
+      --jobs-config string              Directory to find job descriptors (default "/etc/uptrack/jobs.d")
       --prometheus-scrape string     Endpoint prometheus can scrape from (default ":9001/metrics")
 ```
 

@@ -15,14 +15,19 @@
 package ctl
 
 import (
-	"fmt"
-	"strconv"
-
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/metrics"
+	"crypto/tls"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
+	"strconv"
+	"time"
 )
 
 // StartUpTrackServer is initialising the UpTrack Server
@@ -38,17 +43,89 @@ func StartUpTrackServer(config config.Config) error {
 
 	endpoint := config.PrometheusEndpoint()
 	port := strconv.Itoa(config.PrometheusPort())
-	uri := fmt.Sprintf(":" + port + "/" + endpoint)
+	uri := fmt.Sprintf(":" + port + endpoint)
+
+	descriptor, _ := descriptor(config.JobConfigDir())
 	registry := metrics.NewCombinedRegistry(
-		metrics.NewPrometheusRegistry(uri),
+		metrics.NewPrometheusRegistry(descriptor),
 		metrics.NewDatadogRegistry(config.DatadogCredentials()),
 	)
 	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
-	logrus.Info(registry)
+
+	go runJobs(descriptor, registry, config.DefaultInterval())
+
+	// starting server with prometheus endpoint
 	http.Handle(endpoint, promhttp.Handler())
+
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	return nil
+}
+
+func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval int) {
+	for {
+		//having one check per interval
+		start := time.Now()
+		for _, check := range descriptor.UpChecks {
+			doChecks(descriptor, registry, check)
+		}
+
+		duration := (time.Duration(interval) * time.Second) - time.Since(start)
+		if duration.Seconds() <= 0 {
+			duration = time.Duration(0)
+		}
+
+		time.Sleep(duration)
+	}
+
+}
+
+func doChecks(descriptor job.Descriptor, registry metrics.Registry, check job.UpCheck) {
+	name := check.Name
+	registry.IncExecution(name)
+	url := descriptor.BaseURL
+	req, _ := http.NewRequest(string(check.Method), url, nil)
+
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace(registry, name)))
+	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+	}
+	if resp.StatusCode == 200 {
+		registry.IncCanConnect(name, "")
+	} else {
+		registry.IncCanNotConnect(name, "")
+	}
+}
+
+//TODO errorhandling!!!
+func descriptor(path string) (job.Descriptor, error) {
+	d := job.Descriptor{}
+	data, _ := ioutil.ReadFile(path)
+	err := yaml.Unmarshal(data, &d)
+	return d, err
+}
+
+func trace(registry metrics.Registry, name string) *httptrace.ClientTrace {
+	var connect, dns, tlsHandshake time.Time
+	start := time.Now()
+	return &httptrace.ClientTrace{
+		DNSStart: func(dsi httptrace.DNSStartInfo) { dns = time.Now() },
+		DNSDone: func(ddi httptrace.DNSDoneInfo) {
+		},
+
+		TLSHandshakeStart: func() { tlsHandshake = time.Now() },
+		TLSHandshakeDone: func(cs tls.ConnectionState, err error) {
+		},
+
+		ConnectStart: func(network, addr string) { connect = time.Now() },
+		ConnectDone: func(network, addr string, err error) {
+		},
+
+		GotFirstResponseByte: func() {
+			registry.SetTTFB(name, "", time.Since(start).Milliseconds())
+
+		},
+	}
 }

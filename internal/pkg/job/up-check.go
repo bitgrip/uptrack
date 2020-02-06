@@ -4,7 +4,7 @@ import "fmt"
 
 import "strings"
 
-// Body is taken from plain body or transformed form base64 body if exists
+// Body is taken from plain body or transformed from base64 body if exists
 func (check UpCheck) Body() []byte {
 	return nil
 }
