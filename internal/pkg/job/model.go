@@ -75,8 +75,7 @@ const (
 
 // DnsJob is verifying if a fqdn is looked up to the expected set of IPs
 type DnsJob struct {
-	Name     string
-	FQDN     string   `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
-	IPs      []string `json:"ips,omitempty" yaml:"ips,omitempty"`
-	CheckSSL bool     `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
+	Name string
+	FQDN string   `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
+	IPs  []string `json:"ips,omitempty" yaml:"ips,omitempty"`
 }

@@ -18,11 +18,11 @@ func trace(registry metrics.Registry, name string) httptrace.ClientTrace {
 			connect = time.Now()
 		},
 		ConnectDone: func(network, addr string, err error) {
-			registry.SetConnectTime(name, time.Since(connect).Milliseconds())
+			registry.SetConnectTime(name, float64(time.Since(connect).Milliseconds()))
 		},
 
 		GotFirstResponseByte: func() {
-			registry.SetTTFB(name, time.Since(start).Milliseconds())
+			registry.SetTTFB(name, float64(time.Since(start).Milliseconds()))
 
 		},
 	}

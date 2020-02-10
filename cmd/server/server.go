@@ -17,7 +17,6 @@ package server
 import (
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/ctl"
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
@@ -56,17 +55,11 @@ func start(cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	serverCmd.PersistentFlags().String("server-config", "./config/server.yaml", "Configuration file for uptrack server")
 	serverCmd.PersistentFlags().String("jobs-config", "./config/jobs.yaml", "Descriptor file defining all checks")
 	serverCmd.PersistentFlags().Int("default-interval", 10, "Default interval to execute job")
 	serverCmd.PersistentFlags().String("datadog-credentials", "/etc/uptrack/datadog/credentials", "File containing datadog credentials")
 	serverCmd.PersistentFlags().String("prometheus-port", "9001", "Port exposed by prometheus")
 	serverCmd.PersistentFlags().String("prometheus-endpoint", "/metrics", "Prometheus Endpoint")
-
-	//Server Configuration via Environment variables
-	viper.BindPFlag("uptrack.server_config", serverCmd.PersistentFlags().Lookup("server-config"))
-	viper.BindEnv("uptrack.server_config", "UPTRACK_SERVER_CONFIG")
-	viper.SetConfigFile(viper.GetString("uptrack.server_config"))
 
 	viper.BindPFlag("uptrack.jobs_config", serverCmd.PersistentFlags().Lookup("jobs-config"))
 	viper.BindEnv("uptrack.jobs_config", "UPTRACK_JOBS_CONFIG")
@@ -83,9 +76,5 @@ func init() {
 	viper.BindPFlag("uptrack.prometheus.endpoint", serverCmd.PersistentFlags().Lookup("prometheus-endpoint"))
 	viper.BindEnv("uptrack.prometheus.endpoint", "UPTRACK_PROMETHEUS_ENDPOINT")
 
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
-		log.Panic(fmt.Sprintf("Fatal error config file: %s \n", err))
-	}
 	serverCmd.AddCommand(startCmd)
 }

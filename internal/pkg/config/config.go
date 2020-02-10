@@ -14,11 +14,16 @@
 
 package config
 
-// Config provides rancher access informations
+import "time"
+
+// Config provides information for DD and Prometheus configurations
 type Config interface {
 	JobConfigDir() string
-	DefaultInterval() int
-	DatadogCredentials() string
+	DefaultInterval() time.Duration
 	PrometheusEndpoint() string
 	PrometheusPort() int
+	DatadogCredentials() string
+	DDApiKey() string
+	DDAppKey() string
+	DDInterval() time.Duration
 }

@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"bitbucket.org/bitgrip/uptrack/cmd/server"
@@ -54,6 +55,14 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&logLevel, "verbosity", "v", 0, "verbosity level to use")
 	rootCmd.PersistentFlags().BoolVar(&logJSON, "log-json", false, "if to log using json format")
 
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindEnv("config", "CONFIG")
+	viper.SetConfigFile(viper.GetString("config"))
+	err := viper.ReadInConfig() // Find and read the config file
+	if err != nil {             // Handle errors reading the config file
+		log.Panic(fmt.Sprintf("Fatal error config file: %s \n", err))
+	}
+
 	//Application Configuration via Environment Variables
 	viper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
 	viper.BindEnv("verbosity", "VERBOSITY")
@@ -67,6 +76,7 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(genDocCmd)
 	rootCmd.AddCommand(completionCmd)
+
 }
 
 func initSubCommand() {

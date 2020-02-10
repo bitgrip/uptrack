@@ -50,7 +50,7 @@ func StartUpTrackServer(config config.Config) error {
 	}
 	registry := metrics.NewCombinedRegistry(
 		metrics.NewPrometheusRegistry(descriptor),
-		metrics.NewDatadogRegistry(config.DatadogCredentials()),
+		metrics.NewDatadogRegistry(config, descriptor),
 	)
 	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
 
@@ -66,7 +66,7 @@ func StartUpTrackServer(config config.Config) error {
 	return nil
 }
 
-func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval int) {
+func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time.Duration) {
 	for {
 		//having one upJob iteration per interval
 		startJobs := time.Now()
@@ -80,7 +80,7 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval int)
 			doDnsChecks(registry, dnsJob)
 		}
 
-		duration := (time.Duration(interval) * time.Second) - time.Since(startJobs)
+		duration := (interval * time.Second) - time.Since(startJobs)
 		if duration.Seconds() <= 0 {
 			duration = time.Duration(0)
 		}
@@ -90,9 +90,6 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval int)
 }
 
 func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
-	if !dnsJob.CheckSSL {
-		return
-	}
 	actIps, _ := net.LookupIP(dnsJob.FQDN)
 	actIpsS := make([]string, 0)
 	for _, v := range actIps {
@@ -137,7 +134,7 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 	startReq := time.Now()
 	resp, err := t.RoundTrip(req)
 	endReq := time.Since(startReq)
-	registry.SetRequestTime(jobName, endReq.Milliseconds())
+	registry.SetRequestTime(jobName, float64(endReq.Milliseconds()))
 
 	//time until expiry of ssl certs
 	if upJob.CheckSSL {
@@ -155,7 +152,7 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 
 			//measure received bytes, body+headers
 			bodyBytes, _ := ioutil.ReadAll(resp.Body)
-			registry.SetBytesReceived(jobName, int64(len(bodyBytes)+len(resp.Header)))
+			registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
 
 		} else {
 			registry.IncCanNotConnect(jobName)

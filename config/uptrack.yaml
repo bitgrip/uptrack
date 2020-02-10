@@ -1,8 +1,12 @@
+log_json: true
+verbosity: 1
 uptrack:
   default_interval: 10
   jobs_config: './config/jobs.yaml'
   datadog:
-    credentials: '/etc/uptrack/datadog/credentials'
+    appKey: 'app'
+    apiKey: 'api'
+    interval: 5
   prometheus:
     port: 2222
     endpoint: /metrics

@@ -17,9 +17,10 @@ type prometheusRegistry struct {
 
 const jobName string = "job"
 const checkName string = "check"
-const url string = "url"
+const URL string = "URL"
+const host = "host"
 const FQDN string = "FQDN"
-const Project = "project"
+const projectName = "project"
 
 type metrics struct {
 	CanConnect    prometheus.Counter
@@ -32,33 +33,51 @@ type metrics struct {
 	DNSIpsRatio   prometheus.Gauge
 }
 
+const (
+	prCanConnect         string = "connection_successful"
+	prCannotConnect      string = "connection_failed"
+	prSSLDaysLeft        string = "ssl_days_left"
+	prConnectTime        string = "connection_time"
+	prTTFB               string = "TTFB"
+	prRequestTime        string = "request_time"
+	prBytesReceived      string = "bytes_received"
+	prFoundIps           string = "found_ips_ratio"
+	prNamespace          string = "uptrack"
+	prNameUpcheckCounter string = "upcheck_counter"
+	prNameUpCheckGauge   string = "upcheck_gauge"
+
+	prNameDnsCheckCounter string = "upcheck_counter"
+
+	prNameDnsCheckGauge string = "dnscheck_gauge"
+)
+
 func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
 	projectName := descriptor.Name
 	exec := promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "uptrack",
+		Namespace: prNamespace,
 		Name:      "counter",
 		ConstLabels: prometheus.Labels{
-			Project: projectName,
+			projectName: projectName,
 		},
 	})
 
-	localMetricsForChecks := make(map[string]metrics, 8)
+	localMetricsForChecks := make(map[string]metrics, 5)
 	for name, upJob := range descriptor.UpJobs {
 		localMetricsForChecks[name] = metrics{
-			CanConnect:    checkCounter(projectName, "can_connect", upJob),
-			CannotConnect: checkCounter(projectName, "can_not_connect", upJob),
-			SSLDaysLeft:   upGauge(projectName, "ssl_days_left", upJob),
-			ConnectTime:   upGauge(projectName, "connect_time", upJob),
-			TTFB:          upGauge(projectName, "TTFB", upJob),
-			RequestTime:   upGauge(projectName, "request_time", upJob),
-			BytesReceived: upGauge(projectName, "bytes_received", upJob),
+			CanConnect:    checkCounter(projectName, prCanConnect, upJob),
+			CannotConnect: checkCounter(projectName, prCannotConnect, upJob),
+			SSLDaysLeft:   upGauge(projectName, prSSLDaysLeft, upJob),
+			ConnectTime:   upGauge(projectName, prConnectTime, upJob),
+			TTFB:          upGauge(projectName, prTTFB, upJob),
+			RequestTime:   upGauge(projectName, prRequestTime, upJob),
+			BytesReceived: upGauge(projectName, prBytesReceived, upJob),
 		}
 	}
-	localMetricsForDns := make(map[string]metrics, 8)
+	localMetricsForDns := make(map[string]metrics, 5)
 
 	for name, dnsJob := range descriptor.DNSJobs {
 		localMetricsForDns[name] = metrics{
-			DNSIpsRatio: dnsGauge(projectName, "found_ips_ratio", dnsJob),
+			DNSIpsRatio: dnsGauge(projectName, prFoundIps, dnsJob),
 		}
 	}
 
@@ -67,52 +86,52 @@ func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
 
 func checkCounter(project string, name string, job job.UpJob) prometheus.Counter {
 	return promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "uptrack",
-		Name:      "upcheck_counter",
+		Namespace: prNamespace,
+		Name:      prNameUpcheckCounter,
 		ConstLabels: prometheus.Labels{
-			Project:   project,
-			jobName:   job.Name,
-			checkName: name,
-			url:       job.URL,
+			projectName: project,
+			jobName:     job.Name,
+			checkName:   name,
+			URL:         job.URL,
 		},
 	})
 }
 
 func dnsCounter(project string, name string, job job.DnsJob) prometheus.Counter {
 	return promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "uptrack",
-		Name:      "dns_counter",
+		Namespace: prNamespace,
+		Name:      prNameDnsCheckCounter,
 		ConstLabels: prometheus.Labels{
-			Project:   project,
-			jobName:   job.Name,
-			checkName: name,
-			FQDN:      job.FQDN,
+			projectName: project,
+			jobName:     job.Name,
+			checkName:   name,
+			FQDN:        job.FQDN,
 		},
 	})
 }
 
 func upGauge(project string, name string, job job.UpJob) prometheus.Gauge {
 	return promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: "uptrack",
-		Name:      "upcheck_gauge",
+		Namespace: prNamespace,
+		Name:      prNameUpCheckGauge,
 		ConstLabels: prometheus.Labels{
-			Project:   project,
-			jobName:   job.Name,
-			checkName: name,
-			url:       job.URL,
+			projectName: project,
+			jobName:     job.Name,
+			checkName:   name,
+			URL:         job.URL,
 		},
 	})
 }
 
 func dnsGauge(project string, name string, job job.DnsJob) prometheus.Gauge {
 	return promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: "uptrack",
-		Name:      "dns_gauge",
+		Namespace: prNamespace,
+		Name:      prNameDnsCheckGauge,
 		ConstLabels: prometheus.Labels{
-			Project:   project,
-			jobName:   job.Name,
-			checkName: name,
-			FQDN:      job.FQDN,
+			projectName: project,
+			jobName:     job.Name,
+			checkName:   name,
+			FQDN:        job.FQDN,
 		},
 	})
 }
@@ -133,23 +152,23 @@ func (r *prometheusRegistry) SetSSLDaysLeft(name string, daysLeft float64) {
 	r.metricsForUpChecks[name].SSLDaysLeft.Set(math.Round(daysLeft))
 }
 
-func (r *prometheusRegistry) SetConnectTime(name string, millis int64) {
-	r.metricsForUpChecks[name].ConnectTime.Set(float64(millis))
+func (r *prometheusRegistry) SetConnectTime(name string, millis float64) {
+	r.metricsForUpChecks[name].ConnectTime.Set(millis)
 
 }
 
-func (r *prometheusRegistry) SetTTFB(name string, millis int64) {
-	r.metricsForUpChecks[name].TTFB.Set(float64(millis))
+func (r *prometheusRegistry) SetTTFB(name string, millis float64) {
+	r.metricsForUpChecks[name].TTFB.Set(millis)
 
 }
 
-func (r *prometheusRegistry) SetRequestTime(name string, millis int64) {
-	r.metricsForUpChecks[name].RequestTime.Set(float64(millis))
+func (r *prometheusRegistry) SetRequestTime(name string, millis float64) {
+	r.metricsForUpChecks[name].RequestTime.Set(millis)
 
 }
 
-func (r *prometheusRegistry) SetBytesReceived(name string, bytes int64) {
-	r.metricsForUpChecks[name].BytesReceived.Set(float64(bytes))
+func (r *prometheusRegistry) SetBytesReceived(name string, bytes float64) {
+	r.metricsForUpChecks[name].BytesReceived.Set(bytes)
 }
 func (r *prometheusRegistry) SetIpsRatio(job string, ratio float64) {
 	r.metricsForDnsChecks[job].DNSIpsRatio.Set(ratio)
