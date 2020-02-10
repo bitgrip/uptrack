@@ -59,3 +59,9 @@ func (r *combinedRegistry) SetBytesReceived(job string, bytes int64) {
 		registry.SetBytesReceived(job, bytes)
 	}
 }
+
+func (r *combinedRegistry) SetIpsRatio(job string, ratio float64) {
+	for _, registry := range r.registries {
+		registry.SetIpsRatio(job, ratio)
+	}
+}

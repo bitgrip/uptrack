@@ -13,4 +13,7 @@ type Registry interface {
 	SetTTFB(job string, millis int64)
 	SetRequestTime(job string, millis int64)
 	SetBytesReceived(job string, bytes int64)
+
+	//DNS lookup check
+	SetIpsRatio(job string, ratio float64)
 }

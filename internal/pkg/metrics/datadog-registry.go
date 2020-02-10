@@ -32,3 +32,6 @@ func (r *datadogRegistry) SetRequestTime(job string, millis int64) {
 
 func (r *datadogRegistry) SetBytesReceived(job string, bytes int64) {
 }
+func (r *datadogRegistry) SetIpsRatio(job string, ratio float64) {
+
+}

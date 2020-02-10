@@ -66,6 +66,7 @@ func init() {
 	//Server Configuration via Environment variables
 	viper.BindPFlag("uptrack.server_config", serverCmd.PersistentFlags().Lookup("server-config"))
 	viper.BindEnv("uptrack.server_config", "UPTRACK_SERVER_CONFIG")
+	viper.SetConfigFile(viper.GetString("uptrack.server_config"))
 
 	viper.BindPFlag("uptrack.jobs_config", serverCmd.PersistentFlags().Lookup("jobs-config"))
 	viper.BindEnv("uptrack.jobs_config", "UPTRACK_JOBS_CONFIG")
@@ -81,8 +82,6 @@ func init() {
 
 	viper.BindPFlag("uptrack.prometheus.endpoint", serverCmd.PersistentFlags().Lookup("prometheus-endpoint"))
 	viper.BindEnv("uptrack.prometheus.endpoint", "UPTRACK_PROMETHEUS_ENDPOINT")
-
-	viper.SetConfigFile(viper.GetString("uptrack.server_config"))
 
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file

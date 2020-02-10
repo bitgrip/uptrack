@@ -1,19 +1,18 @@
 project: KarolsChecks
-base_url:
+base_url: https://www.bitgrip.de
 up_jobs:
   bitgrip_checker:
     description: 'Came for the money, stayed for the story'
-    url_suffix: https://www.bitgrip.de/kontakt
+    url_suffix: /kontakt
     method: GET
     expected_code: 301
-  AUTh_CHECK:
+  another:
     description: 'XXX'
-    url_suffix: https://postman-echo.com/basic-auth
+    url_suffix: /basic-auth
     method: GET
     headers:
       Authorization:
       - 'Basic cG9zdG1hbjpwYXNzd29yZA=='
-
 dns_jobs:
   bitgrip_dns_check:
     fqdn: 'occ-ci2.ksb.bitgrip.berlin'

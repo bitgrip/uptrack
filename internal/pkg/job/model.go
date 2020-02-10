@@ -1,10 +1,35 @@
 package job
 
+import (
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"net/http"
+)
+
 // Descriptor represents a JOB document
 type Descriptor struct {
-	BaseURL string           `json:"base_url,omitempty" yaml:"base_url,omitempty"`
-	UpJobs  map[string]UpJob `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
-	DNSJobs []DnsJob         `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
+	Name    string            `json:"project,omitempty" yaml:"project,omitempty"`
+	BaseURL string            `json:"base_url,omitempty" yaml:"base_url,omitempty"`
+	UpJobs  map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
+	DNSJobs map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
+}
+
+func DescriptorFromFile(path string) (Descriptor, error) {
+	d := Descriptor{}
+	data, _ := ioutil.ReadFile(path)
+	err := yaml.Unmarshal(data, &d)
+
+	for name, upJob := range d.UpJobs {
+		upJob.Name = name
+		upJob.ConcatUrl(d.BaseURL)
+		d.UpJobs[name] = upJob
+	}
+
+	for name, dnsJob := range d.DNSJobs {
+		dnsJob.Name = name
+		d.DNSJobs[name] = dnsJob
+	}
+	return d, err
 }
 
 // UpJob is a check if a HTTP endpoint is up and able to serve required method
@@ -14,23 +39,24 @@ type UpJob struct {
 	Expected   int    `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
 	URLSuffix  string `json:"url_suffix,omitempty" yaml:"url_suffix,omitempty"`
 	URL        string
-	Headers    []Header `json:"headers,omitempty" yaml:"headers,omitempty"`
-	PlainBody  string   `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
-	Base64Body string   `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
-	CheckSSL   bool     `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
+	Header     http.Header `json:"header,omitempty" yaml:"headers,omitempty"`
+	PlainBody  string      `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
+	Base64Body string      `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
+	CheckSSL   bool        `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
 }
 
 type UpJobs map[string]UpJob
 
 //Defining default values for unmarshalling UpJob
+type tmpUpJob UpJob
+
 func (j *UpJob) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type tmpUpJob UpJob
-	test := &tmpUpJob{
+	tmp := &tmpUpJob{
 		Method:   GET,
 		Expected: 200,
 		CheckSSL: true}
-	unmarshal(&test)
-	*j = UpJob(*test)
+	unmarshal(tmp)
+	*j = UpJob(*tmp)
 	return nil
 }
 
@@ -47,11 +73,9 @@ const (
 	HEAD    Method = "HEAD"
 )
 
-// Header represent HTTP headers to be used in a check
-type Header map[string][]string
-
 // DnsJob is verifying if a fqdn is looked up to the expected set of IPs
 type DnsJob struct {
+	Name     string
 	FQDN     string   `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
 	IPs      []string `json:"ips,omitempty" yaml:"ips,omitempty"`
 	CheckSSL bool     `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -45,7 +44,10 @@ func StartUpTrackServer(config config.Config) error {
 	port := strconv.Itoa(config.PrometheusPort())
 	uri := fmt.Sprintf(":" + port + endpoint)
 
-	descriptor, _ := descriptor(config.JobConfigDir())
+	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
+	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
+		logrus.Warn("No Jobs defined ior not properly parsed from {}", config.JobConfigDir())
+	}
 	registry := metrics.NewCombinedRegistry(
 		metrics.NewPrometheusRegistry(descriptor),
 		metrics.NewDatadogRegistry(config.DatadogCredentials()),
@@ -68,8 +70,14 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval int)
 	for {
 		//having one upJob iteration per interval
 		startJobs := time.Now()
+		//count iterations
+		registry.IncExecution(descriptor.Name)
 		for _, upJob := range descriptor.UpJobs {
-			doChecks(registry, upJob)
+			doUpChecks(registry, upJob)
+		}
+
+		for _, dnsJob := range descriptor.DNSJobs {
+			doDnsChecks(registry, dnsJob)
 		}
 
 		duration := (time.Duration(interval) * time.Second) - time.Since(startJobs)
@@ -81,18 +89,50 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval int)
 
 }
 
-func doChecks(registry metrics.Registry, upJob job.UpJob) {
+func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
+	if !dnsJob.CheckSSL {
+		return
+	}
+	actIps, _ := net.LookupIP(dnsJob.FQDN)
+	actIpsS := make([]string, 0)
+	for _, v := range actIps {
+		actIpsS = append(actIpsS, v.String())
+	}
+	expIps := dnsJob.IPs
+
+	intersecIps := GetIntersecting(expIps, actIpsS)
+	if len(expIps) == 0 {
+		registry.SetIpsRatio(dnsJob.Name, 0)
+	}
+	registry.SetIpsRatio(dnsJob.Name, float64(len(intersecIps)/len(expIps)))
+}
+
+func GetIntersecting(expIps []string, actIps []string) []string {
+	intersecIps := make([]string, 0)
+	for _, expIp := range expIps {
+		for _, actIp := range actIps {
+			if actIp == expIp {
+				intersecIps = append(intersecIps, expIp)
+			}
+		}
+
+	}
+	return intersecIps
+}
+
+func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 	jobName := upJob.Name
 	url := upJob.URL
-	//count iterations
-	registry.IncExecution(jobName)
-
 	//prepare request
 	req, _ := http.NewRequest(string(upJob.Method), url, upJob.Body())
 	clientTrace := trace(registry, jobName)
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
-	t := transport()
+	//Add headers
+	for k, v := range upJob.Header {
+		req.Header.Add(k, v[0])
+	}
 
+	t := transport()
 	//measure request time
 	startReq := time.Now()
 	resp, err := t.RoundTrip(req)
@@ -110,7 +150,7 @@ func doChecks(registry metrics.Registry, upJob job.UpJob) {
 
 	} else {
 		if resp.StatusCode == upJob.Expected {
-			//count successful connection
+			//count successful connections
 			registry.IncCanConnect(jobName)
 
 			//measure received bytes, body+headers
@@ -120,53 +160,5 @@ func doChecks(registry metrics.Registry, upJob job.UpJob) {
 		} else {
 			registry.IncCanNotConnect(jobName)
 		}
-	}
-}
-
-func transport() http.Transport {
-	return http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-}
-
-func descriptor(path string) (job.Descriptor, error) {
-	d := job.Descriptor{}
-	data, _ := ioutil.ReadFile(path)
-	err := yaml.Unmarshal(data, &d)
-
-	for name, upJob := range d.UpJobs {
-		upJob.Name = name
-		upJob.ConcatUrl(d.BaseURL)
-		d.UpJobs[name] = upJob
-	}
-	return d, err
-}
-
-func trace(registry metrics.Registry, name string) httptrace.ClientTrace {
-	var connect time.Time
-	start := time.Now()
-	return httptrace.ClientTrace{
-
-		ConnectStart: func(network, addr string) {
-			connect = time.Now()
-		},
-		ConnectDone: func(network, addr string, err error) {
-			registry.SetConnectTime(name, time.Since(connect).Milliseconds())
-		},
-
-		GotFirstResponseByte: func() {
-			registry.SetTTFB(name, time.Since(start).Milliseconds())
-
-		},
 	}
 }

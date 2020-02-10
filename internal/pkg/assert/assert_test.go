@@ -15,17 +15,24 @@
 package assert
 
 import (
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/ctl"
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"testing"
 )
 
-func TestTextByteSlice(t *testing.T) {
-	expected := "test text"
-	slice1 := []byte(expected)
-	Equals(t, expected, buildCompareString(slice1))
-}
+func TestDescriptorUnmarshal(t *testing.T) {
+	descriptor, err := job.DescriptorFromFile("./test.yaml")
+	Equals(t, nil, err)
+	Equals(t, 2, len(descriptor.UpJobs))
+	name := descriptor.UpJobs["bitgrip_checker"].Name
+	Equals(t, "bitgrip_checker", name)
+	url := descriptor.UpJobs["bitgrip_checker"].URL
+	Equals(t, "https://www.bitgrip.de/kontakt", url)
 
-func TestBinaryByteSlice(t *testing.T) {
-	slice1 := []byte{0xF3, 0xF4, 0xF5}
-	expected := string(slice1)
-	Equals(t, expected, buildCompareString(slice1))
+}
+func TestIntesectArrays(t *testing.T) {
+	arr1 := []string{"A", "B", "C", "D"}
+	arr2 := []string{"1", "B", "3", "D"}
+	intersecting := ctl.GetIntersecting(arr1, arr2)
+	Equals(t, []string{"B", "D"}, intersecting)
 }

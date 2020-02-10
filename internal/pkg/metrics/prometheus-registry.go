@@ -10,15 +10,18 @@ import (
 // prometheusRegistry is a wrapper to forward Registry actions
 // to a collection of Registries
 type prometheusRegistry struct {
-	metricsForChecks map[string]metrics
+	Execution           prometheus.Counter //Execution Counter
+	metricsForUpChecks  map[string]metrics
+	metricsForDnsChecks map[string]metrics
 }
 
 const jobName string = "job"
 const checkName string = "check"
 const url string = "url"
+const FQDN string = "FQDN"
+const Project = "project"
 
 type metrics struct {
-	Execution     prometheus.Counter //Execution Counter
 	CanConnect    prometheus.Counter
 	CannotConnect prometheus.Counter
 	SSLDaysLeft   prometheus.Gauge
@@ -26,31 +29,48 @@ type metrics struct {
 	TTFB          prometheus.Gauge
 	RequestTime   prometheus.Gauge
 	BytesReceived prometheus.Gauge
+	DNSIpsRatio   prometheus.Gauge
 }
 
 func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
-	localMetricsForChecks := make(map[string]metrics, 8)
-	for name, upJob := range descriptor.UpJobs {
-		localMetricsForChecks[name] = metrics{
-			Execution:     counter("iterations", upJob),
-			CanConnect:    counter("can_connect", upJob),
-			CannotConnect: counter("can_not_connect", upJob),
-			SSLDaysLeft:   gauge("ssl_days_left", upJob),
-			ConnectTime:   gauge("connect_time", upJob),
-			TTFB:          gauge("TTFB", upJob),
-			RequestTime:   gauge("request_time", upJob),
-			BytesReceived: gauge("bytes_received", upJob),
-		}
-	}
-
-	return &prometheusRegistry{metricsForChecks: localMetricsForChecks}
-}
-
-func counter(name string, job job.UpJob) prometheus.Counter {
-	return promauto.NewCounter(prometheus.CounterOpts{
+	projectName := descriptor.Name
+	exec := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "uptrack",
 		Name:      "counter",
 		ConstLabels: prometheus.Labels{
+			Project: projectName,
+		},
+	})
+
+	localMetricsForChecks := make(map[string]metrics, 8)
+	for name, upJob := range descriptor.UpJobs {
+		localMetricsForChecks[name] = metrics{
+			CanConnect:    checkCounter(projectName, "can_connect", upJob),
+			CannotConnect: checkCounter(projectName, "can_not_connect", upJob),
+			SSLDaysLeft:   upGauge(projectName, "ssl_days_left", upJob),
+			ConnectTime:   upGauge(projectName, "connect_time", upJob),
+			TTFB:          upGauge(projectName, "TTFB", upJob),
+			RequestTime:   upGauge(projectName, "request_time", upJob),
+			BytesReceived: upGauge(projectName, "bytes_received", upJob),
+		}
+	}
+	localMetricsForDns := make(map[string]metrics, 8)
+
+	for name, dnsJob := range descriptor.DNSJobs {
+		localMetricsForDns[name] = metrics{
+			DNSIpsRatio: dnsGauge(projectName, "found_ips_ratio", dnsJob),
+		}
+	}
+
+	return &prometheusRegistry{Execution: exec, metricsForUpChecks: localMetricsForChecks, metricsForDnsChecks: localMetricsForDns}
+}
+
+func checkCounter(project string, name string, job job.UpJob) prometheus.Counter {
+	return promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "uptrack",
+		Name:      "upcheck_counter",
+		ConstLabels: prometheus.Labels{
+			Project:   project,
 			jobName:   job.Name,
 			checkName: name,
 			url:       job.URL,
@@ -58,11 +78,25 @@ func counter(name string, job job.UpJob) prometheus.Counter {
 	})
 }
 
-func gauge(name string, job job.UpJob) prometheus.Gauge {
+func dnsCounter(project string, name string, job job.DnsJob) prometheus.Counter {
+	return promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "uptrack",
+		Name:      "dns_counter",
+		ConstLabels: prometheus.Labels{
+			Project:   project,
+			jobName:   job.Name,
+			checkName: name,
+			FQDN:      job.FQDN,
+		},
+	})
+}
+
+func upGauge(project string, name string, job job.UpJob) prometheus.Gauge {
 	return promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "uptrack",
-		Name:      "gauge",
+		Name:      "upcheck_gauge",
 		ConstLabels: prometheus.Labels{
+			Project:   project,
 			jobName:   job.Name,
 			checkName: name,
 			url:       job.URL,
@@ -70,38 +104,54 @@ func gauge(name string, job job.UpJob) prometheus.Gauge {
 	})
 }
 
+func dnsGauge(project string, name string, job job.DnsJob) prometheus.Gauge {
+	return promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "uptrack",
+		Name:      "dns_gauge",
+		ConstLabels: prometheus.Labels{
+			Project:   project,
+			jobName:   job.Name,
+			checkName: name,
+			FQDN:      job.FQDN,
+		},
+	})
+}
 func (r *prometheusRegistry) IncExecution(name string) {
-	r.metricsForChecks[name].Execution.Inc()
+	r.Execution.Inc()
 }
 
 func (r *prometheusRegistry) IncCanConnect(name string) {
-	r.metricsForChecks[name].CanConnect.Inc()
+	r.metricsForUpChecks[name].CanConnect.Inc()
 
 }
 
 func (r *prometheusRegistry) IncCanNotConnect(name string) {
-	r.metricsForChecks[name].CannotConnect.Inc()
+	r.metricsForUpChecks[name].CannotConnect.Inc()
 }
 
 func (r *prometheusRegistry) SetSSLDaysLeft(name string, daysLeft float64) {
-	r.metricsForChecks[name].SSLDaysLeft.Set(math.Round(daysLeft))
+	r.metricsForUpChecks[name].SSLDaysLeft.Set(math.Round(daysLeft))
 }
 
 func (r *prometheusRegistry) SetConnectTime(name string, millis int64) {
-	r.metricsForChecks[name].ConnectTime.Set(float64(millis))
+	r.metricsForUpChecks[name].ConnectTime.Set(float64(millis))
 
 }
 
 func (r *prometheusRegistry) SetTTFB(name string, millis int64) {
-	r.metricsForChecks[name].TTFB.Set(float64(millis))
+	r.metricsForUpChecks[name].TTFB.Set(float64(millis))
 
 }
 
 func (r *prometheusRegistry) SetRequestTime(name string, millis int64) {
-	r.metricsForChecks[name].RequestTime.Set(float64(millis))
+	r.metricsForUpChecks[name].RequestTime.Set(float64(millis))
 
 }
 
 func (r *prometheusRegistry) SetBytesReceived(name string, bytes int64) {
-	r.metricsForChecks[name].BytesReceived.Set(float64(bytes))
+	r.metricsForUpChecks[name].BytesReceived.Set(float64(bytes))
+}
+func (r *prometheusRegistry) SetIpsRatio(job string, ratio float64) {
+	r.metricsForDnsChecks[job].DNSIpsRatio.Set(ratio)
+
 }
