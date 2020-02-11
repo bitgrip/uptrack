@@ -9,14 +9,13 @@ RUN adduser -D -g '' uptrack \
 && chown -R uptrack:uptrack /uptrack
 COPY . $GOPATH/src/bitbucket.org/bitgrip/uptrack/
 WORKDIR $GOPATH/src/bitbucket.org/bitgrip/uptrack/
-COPY ./config /go/bin/
 
 ENV GO111MODULE=on \
 CGO_ENABLED=0 \
 GOOS=linux \
 GOARCH=amd64
 
-#RUN go test -mod=vendor -v ./...
+RUN go test -mod=vendor -v ./...
 
 #build the binary
 RUN echo "Building VERSION=$(git describe --tags)" 1>&2 && \
@@ -48,4 +47,4 @@ COPY --from=builder /uptrack /uptrack
 ENV HOME=/uptrack
 USER uptrack
 WORKDIR /data
-ENTRYPOINT ["/bin/uptrack","server","start"]
+ENTRYPOINT ["/bin/uptrack"]
