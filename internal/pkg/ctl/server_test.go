@@ -12,27 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package assert
+package ctl
 
 import (
-	"bitbucket.org/bitgrip/uptrack/internal/pkg/ctl"
-	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/assert"
 	"testing"
 )
 
-func TestDescriptorUnmarshal(t *testing.T) {
-	descriptor, err := job.DescriptorFromFile("./test.yaml")
-	Equals(t, nil, err)
-	Equals(t, 2, len(descriptor.UpJobs))
-	name := descriptor.UpJobs["bitgrip_checker"].Name
-	Equals(t, "bitgrip_checker", name)
-	url := descriptor.UpJobs["bitgrip_checker"].URL
-	Equals(t, "https://www.bitgrip.de/kontakt", url)
-
-}
 func TestIntesectArrays(t *testing.T) {
 	arr1 := []string{"A", "B", "C", "D"}
 	arr2 := []string{"1", "B", "3", "D"}
-	intersecting := ctl.GetIntersecting(arr1, arr2)
-	Equals(t, []string{"B", "D"}, intersecting)
+	intersecting := GetIntersecting(arr1, arr2)
+	assert.Equals(t, []string{"B", "D"}, intersecting)
 }

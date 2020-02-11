@@ -46,11 +46,11 @@ func (config) PrometheusPort() int {
 }
 
 func (config) DDApiKey() string {
-	return viper.GetString("uptrack.datadog.api_key")
+	return viper.GetString("uptrack.datadog.apiKey")
 
 }
 func (config) DDAppKey() string {
-	return viper.GetString("uptrack.datadog.app_key")
+	return viper.GetString("uptrack.datadog.appKey")
 
 }
 

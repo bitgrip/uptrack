@@ -26,7 +26,7 @@ import (
 var genDocCmd = &cobra.Command{
 	Use:   "gen-doc [target folder]",
 	Short: "genrates the markdown documentation",
-	Long:  `Generates the full command tree documantation as markdown files inside the target folder.`,
+	Long:  `Generates the full command tree documentation as markdown files inside the target folder.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		err := doc.GenMarkdownTree(rootCmd, args[0])

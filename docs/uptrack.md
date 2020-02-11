@@ -4,15 +4,15 @@ track down your uptime
 
 ### Synopsis
 
-uptrack is a service to automaticly check the uptime of your HTTP services
+uptrack is a service to steadily check the uptime of your HTTP services
 
 ### Options
 
 ```
-      --config string   config file (default is $HOME/.uptrack.yaml)
-  -h, --help            help for uptrack
-      --log-json        if to log using json format
-  -v, --verbosity int   verbosity level to use
+  -h, --help                    help for uptrack
+      --log-json                if to log using json format
+      --uptrack-config string   Configuration file for uptrack application  (default "config/uptrack.yaml")
+  -v, --verbosity int           verbosity level to use
 ```
 
 ### SEE ALSO

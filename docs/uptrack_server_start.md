@@ -4,7 +4,7 @@ Start the server
 
 ### Synopsis
 
-Start the UpTrack server
+Start the uptrack server
 
 ```
 uptrack server start [flags]
@@ -19,12 +19,15 @@ uptrack server start [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string                config file (default is $HOME/.uptrack.yaml)
-      --datadog-credentials string   File containing datadog credentials (default "/etc/uptrack/datadog/credentials")
+      --datadog-apiKey string        Datadog API-Key
+      --datadog-appKey string        Datadog APP-key
+      --datadog-interval int         Interval for sending metrics to Datadog (default 5)
       --default-interval int         Default interval to execute job (default 10)
-      --jobs-config string              Directory to find job descriptors (default "/etc/uptrack/jobs.d")
+      --jobs-config string           Descriptor file defining all checks (default "./config/jobs.yaml")
       --log-json                     if to log using json format
-      --prometheus-scrape string     Endpoint prometheus can scrape from (default ":9001/metrics")
+      --prometheus-endpoint string   Prometheus Endpoint (default "/metrics")
+      --prometheus-port string       Port exposed by prometheus (default "9001")
+      --uptrack-config string        Configuration file for uptrack application  (default "config/uptrack.yaml")
   -v, --verbosity int                verbosity level to use
 ```
 

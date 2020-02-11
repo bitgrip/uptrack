@@ -1,4 +1,4 @@
-project: Karols Checks
+project: KarolsChecks
 base_url:
 up_jobs:
   bitgrip_checker:

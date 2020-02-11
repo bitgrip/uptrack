@@ -25,12 +25,12 @@ import (
 var (
 	serverCmd = &cobra.Command{
 		Use:   "server",
-		Short: "Interact to the server",
+		Short: "Interact with the uptrack server",
 		Long:  serverLongDescription,
 	}
 	startCmd = &cobra.Command{
 		Use:   "start",
-		Short: "Start the server",
+		Short: "Start the uptrack server",
 		Long:  startLongDescription,
 		Run:   start,
 	}
@@ -57,9 +57,13 @@ func start(cmd *cobra.Command, args []string) {
 func init() {
 	serverCmd.PersistentFlags().String("jobs-config", "./config/jobs.yaml", "Descriptor file defining all checks")
 	serverCmd.PersistentFlags().Int("default-interval", 10, "Default interval to execute job")
-	serverCmd.PersistentFlags().String("datadog-credentials", "/etc/uptrack/datadog/credentials", "File containing datadog credentials")
+
 	serverCmd.PersistentFlags().String("prometheus-port", "9001", "Port exposed by prometheus")
 	serverCmd.PersistentFlags().String("prometheus-endpoint", "/metrics", "Prometheus Endpoint")
+
+	serverCmd.PersistentFlags().String("datadog-appKey", "", "Datadog APP-key")
+	serverCmd.PersistentFlags().String("datadog-apiKey", "", "Datadog API-Key")
+	serverCmd.PersistentFlags().Int("datadog-interval", 5, "Interval for sending metrics to Datadog")
 
 	viper.BindPFlag("uptrack.jobs_config", serverCmd.PersistentFlags().Lookup("jobs-config"))
 	viper.BindEnv("uptrack.jobs_config", "UPTRACK_JOBS_CONFIG")
@@ -67,14 +71,20 @@ func init() {
 	viper.BindPFlag("uptrack.default_interval", serverCmd.PersistentFlags().Lookup("default-interval"))
 	viper.BindEnv("uptrack.default_interval", "UPTRACK_DEFAULT_INTERVAL")
 
-	viper.BindPFlag("uptrack.datadog.credentials", serverCmd.PersistentFlags().Lookup("datadog-credentials"))
-	viper.BindEnv("uptrack.datadog.credentials", "UPTRACK_DATADOG_CREDENTIALS")
-
 	viper.BindPFlag("uptrack.prometheus.port", serverCmd.PersistentFlags().Lookup("prometheus-port"))
 	viper.BindEnv("uptrack.prometheus.port", "UPTRACK_PROMETHEUS_PORT")
 
 	viper.BindPFlag("uptrack.prometheus.endpoint", serverCmd.PersistentFlags().Lookup("prometheus-endpoint"))
 	viper.BindEnv("uptrack.prometheus.endpoint", "UPTRACK_PROMETHEUS_ENDPOINT")
+
+	viper.BindPFlag("uptrack.datadog.appKey", serverCmd.PersistentFlags().Lookup("datadog-appKey"))
+	viper.BindEnv("uptrack.datadog.appKey", "UPTRACK_DATADOG_APPKEY")
+
+	viper.BindPFlag("uptrack.datadog.apiKey", serverCmd.PersistentFlags().Lookup("datadog-apiKey"))
+	viper.BindEnv("uptrack.datadog.apiKey", "UPTRACK_DATADOG_APIKEY")
+
+	viper.BindPFlag("uptrack.datadog.interval", serverCmd.PersistentFlags().Lookup("datadog-interval"))
+	viper.BindEnv("uptrack.datadog.interval", "UPTRACK_DATADOG_INTERVAL")
 
 	serverCmd.AddCommand(startCmd)
 }

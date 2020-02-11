@@ -80,11 +80,14 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 			doDnsChecks(registry, dnsJob)
 		}
 
-		duration := (interval * time.Second) - time.Since(startJobs)
-		if duration.Seconds() <= 0 {
-			duration = time.Duration(0)
+		duration := startJobs.Add(interval).Sub(time.Now())
+
+		if duration.Milliseconds() < 0 {
+			duration = 0
 		}
+
 		time.Sleep(duration)
+		println(duration)
 	}
 
 }

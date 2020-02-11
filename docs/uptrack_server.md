@@ -4,24 +4,27 @@ Interact to the server
 
 ### Synopsis
 
-Interaction to the UpTrack server
+Start, configure and interact with the uptrack server
 
 ### Options
 
 ```
-      --datadog-credentials string   File containing datadog credentials (default "/etc/uptrack/datadog/credentials")
+      --datadog-apiKey string        Datadog API-Key
+      --datadog-appKey string        Datadog APP-key
+      --datadog-interval int         Interval for sending metrics to Datadog (default 5)
       --default-interval int         Default interval to execute job (default 10)
   -h, --help                         help for server
-      --jobs-config string              Directory to find job descriptors (default "/etc/uptrack/jobs.d")
-      --prometheus-scrape string     Endpoint prometheus can scrape from (default ":9001/metrics")
+      --jobs-config string           Descriptor file defining all checks (default "./config/jobs.yaml")
+      --prometheus-endpoint string   Prometheus Endpoint (default "/metrics")
+      --prometheus-port string       Port exposed by prometheus (default "9001")
 ```
 
 ### Options inherited from parent commands
 
 ```
-      --config string   config file (default is $HOME/.uptrack.yaml)
-      --log-json        if to log using json format
-  -v, --verbosity int   verbosity level to use
+      --log-json                if to log using json format
+      --uptrack-config string   Configuration file for uptrack application  (default "config/uptrack.yaml")
+  -v, --verbosity int           verbosity level to use
 ```
 
 ### SEE ALSO

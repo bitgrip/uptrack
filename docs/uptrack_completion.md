@@ -36,10 +36,9 @@ uptrack completion [flags]
 ### Options inherited from parent commands
 
 ```
-      --config string   Configuration file for uptrack application  (default "./config/uptrack.yaml")
-      --log-json        if to log using json format
-  -v, --verbosity int   verbosity level to use
-
+      --log-json                if to log using json format
+      --uptrack-config string   Configuration file for uptrack application  (default "config/uptrack.yaml")
+  -v, --verbosity int           verbosity level to use
 ```
 
 ### SEE ALSO

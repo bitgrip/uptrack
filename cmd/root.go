@@ -31,7 +31,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:               "uptrack",
 		Short:             "track down your uptime",
-		Long:              `uptrack is a service to automaticly check the uptime of your HTTP services`,
+		Long:              `uptrack is a service to steadily check the uptime of your HTTP services`,
 		DisableAutoGenTag: true,
 	}
 	cfgFile  string
@@ -51,13 +51,13 @@ func Execute() {
 func init() {
 
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "./config/uptrack.yaml", "Configuration file for uptrack application ")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "uptrack-config", "config/uptrack.yaml", "Configuration file for uptrack application ")
 	rootCmd.PersistentFlags().IntVarP(&logLevel, "verbosity", "v", 0, "verbosity level to use")
 	rootCmd.PersistentFlags().BoolVar(&logJSON, "log-json", false, "if to log using json format")
 
-	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
-	viper.BindEnv("config", "CONFIG")
-	viper.SetConfigFile(viper.GetString("config"))
+	viper.BindPFlag("uptrack-config", rootCmd.PersistentFlags().Lookup("uptrack-config"))
+	viper.BindEnv("uptrack-config", "UPTRACK_CONFIG")
+	viper.SetConfigFile(viper.GetString("uptrack-config"))
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
 		log.Panic(fmt.Sprintf("Fatal error config file: %s \n", err))

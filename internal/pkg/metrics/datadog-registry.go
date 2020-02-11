@@ -57,10 +57,12 @@ type metricKeys struct {
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
 	api := dogdirect.NewAPI(config.DDApiKey(), config.DDAppKey(), config.DDInterval())
-	client := dogdirect.New(descriptor.Name, api)
+	client := dogdirect.New(replaceAll(descriptor.Name, " "), api)
 	periodicClient := dogdirect.NewPeriodic(client, config.DDInterval())
 
 	localTagsForChecks := make(map[string]ddTagStruct, 5)
+
+	localKeysForChecks := make(map[string]metricKeys, 5)
 
 	for name, upJob := range descriptor.UpJobs {
 		localTagsForChecks[name] = ddTagStruct{
@@ -72,8 +74,6 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 			RequestTime:   tags(descriptor, upJob, ddRequestTime),
 			BytesReceived: tags(descriptor, upJob, ddBytesReceived),
 		}
-
-		localKeysForChecks := make(map[string]metricKeys, 5)
 
 		localKeysForChecks[name] = metricKeys{
 			CanConnect:    keys(descriptor.Name, upJob.Name, ddCanConnect),
@@ -87,23 +87,23 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 
 	}
 
-	localKeysForDnsChecks := make(map[string]metricKeys, 5)
-
 	for name, dnsJob := range descriptor.DNSJobs {
 		localTagsForChecks[name] = ddTagStruct{
 			DNSIpsRatio: setDnsJobTags(descriptor, dnsJob, ddFoundIps),
 		}
 
-		localKeysForDnsChecks[name] = metricKeys{
+		localKeysForChecks[name] = metricKeys{
 			DNSIpsRatio: keys(descriptor.Name, dnsJob.Name, ddFoundIps),
 		}
 	}
 	executionCounterTags := ddTags{
 		projectName: descriptor.Name,
-		checkName:   "counter",
+		checkName:   "uptrack_counter",
 	}
 
-	return &datadogRegistry{Client: client, Periodic: periodicClient, tagsForChecks: localTagsForChecks,
+	return &datadogRegistry{Client: client, Periodic: periodicClient,
+		keysForChecks:        localKeysForChecks,
+		tagsForChecks:        localTagsForChecks,
 		ExecutionCounterTags: executionCounterTags}
 }
 
