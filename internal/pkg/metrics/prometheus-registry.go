@@ -34,25 +34,27 @@ type metrics struct {
 }
 
 const (
-	prCanConnect         string = "connection_successful"
-	prCannotConnect      string = "connection_failed"
-	prSSLDaysLeft        string = "ssl_days_left"
-	prConnectTime        string = "connection_time"
-	prTTFB               string = "TTFB"
-	prRequestTime        string = "request_time"
-	prBytesReceived      string = "bytes_received"
-	prFoundIps           string = "found_ips_ratio"
+	//suffixes for metric keys
+	prCanConnect    string = "connection_successful"
+	prCannotConnect string = "connection_failed"
+	prSSLDaysLeft   string = "ssl_days_left"
+	prConnectTime   string = "connection_time"
+	prTTFB          string = "TTFB"
+	prRequestTime   string = "request_time"
+	prBytesReceived string = "bytes_received"
+	prFoundIps      string = "found_ips_ratio"
+
+	//prefixes for metric keys
 	prNamespace          string = "uptrack"
 	prNameUpcheckCounter string = "upcheck_counter"
 	prNameUpCheckGauge   string = "upcheck_gauge"
 
 	prNameDnsCheckCounter string = "upcheck_counter"
-
-	prNameDnsCheckGauge string = "dnscheck_gauge"
+	prNameDnsCheckGauge   string = "dnscheck_gauge"
 )
 
 func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
-	projectName := descriptor.Name
+	projectName := replaceAll(descriptor.Name, " +")
 	exec := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: prNamespace,
 		Name:      "counter",

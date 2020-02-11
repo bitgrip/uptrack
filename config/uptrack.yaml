@@ -1,4 +1,4 @@
-log_json: true
+log_json: false
 verbosity: 1
 uptrack:
   default_interval: 10

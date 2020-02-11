@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/signalsciences/dogdirect"
 	"net/url"
-	"strings"
 )
 
 // datadogRegistry is a wrapper to forward Registry actions
@@ -159,8 +158,8 @@ func (t ddTags) toTagList() []string {
 	return out
 }
 func keys(project string, job string, check string) string {
-	project = strings.ReplaceAll(project, "  ", " ")
-	project = strings.ReplaceAll(project, " ", "_")
+
+	project = replaceAll(project, " +")
 
 	return fmt.Sprintf("%s.%s.%s.%s", metricsRootName, project, job, check) // metricsRootName
 }

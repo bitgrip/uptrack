@@ -1,5 +1,7 @@
 package metrics
 
+import "regexp"
+
 // Registry is a datastore to collect metrics
 type Registry interface {
 	// General
@@ -16,4 +18,10 @@ type Registry interface {
 
 	//DNS lookup check
 	SetIpsRatio(job string, ratio float64)
+}
+
+func replaceAll(str string, pattern string) string {
+	r, _ := regexp.Compile(pattern)
+	str = string(r.ReplaceAll([]byte(str), []byte("_")))
+	return str
 }
