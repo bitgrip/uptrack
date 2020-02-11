@@ -20,11 +20,38 @@ VERBOSITY
 define verbosity level 0, 1, 2,
 
 LOG_JSON
-if settrue, logs output is in JSON format
+if set true, logs output is in JSON format
 ```
 
 ### Server Configuration
 Even though you may configure the uptrack server via `UPTRACK_CONFIG`, you can overwrite most 
+
+```
+UPTRACK_JOBS_CONFIG
+location of the jobs descriptor, see /config/jobs.yaml as template
+   
+UPTRACK_DEFAULT_INTERVAL
+how often checks are performed
+   
+UPTRACK_PROMETHEUS_PORT
+port where prometheus server is exosed
+
+UPTRACK_PROMETHEUS_ENDPOINT
+availabel prometheus endpoint for scraping
+   
+UPTRACK_DATADOG_ENDPOINT
+url to send the datadog metrics to
+   
+UPTRACK_DATADOG_APPKEY
+Datadog App-Key
+   
+UPTRACK_DATADOG_APIKEY
+DataDog API-Key   
+
+UPTRACK_DATADOG_INTERVAL
+how often the metrics are sent to DataDog
+
+```
 
 
 docker run -v "$(pwd)/config":"/go/config" \

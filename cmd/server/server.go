@@ -61,8 +61,10 @@ func init() {
 	serverCmd.PersistentFlags().String("prometheus-port", "9001", "Port exposed by prometheus")
 	serverCmd.PersistentFlags().String("prometheus-endpoint", "/metrics", "Prometheus Endpoint")
 
+	serverCmd.PersistentFlags().String("datadog-endpoint", "https://api.datadoghq.com/api/v1", "Datadog Endpoint")
 	serverCmd.PersistentFlags().String("datadog-appKey", "", "Datadog APP-key")
 	serverCmd.PersistentFlags().String("datadog-apiKey", "", "Datadog API-Key")
+
 	serverCmd.PersistentFlags().Int("datadog-interval", 5, "Interval for sending metrics to Datadog")
 
 	viper.BindPFlag("uptrack.jobs_config", serverCmd.PersistentFlags().Lookup("jobs-config"))
@@ -76,6 +78,9 @@ func init() {
 
 	viper.BindPFlag("uptrack.prometheus.endpoint", serverCmd.PersistentFlags().Lookup("prometheus-endpoint"))
 	viper.BindEnv("uptrack.prometheus.endpoint", "UPTRACK_PROMETHEUS_ENDPOINT")
+
+	viper.BindPFlag("uptrack.datadog.endpoint", serverCmd.PersistentFlags().Lookup("datadog-endpoint"))
+	viper.BindEnv("uptrack.datadog.endpoint", "UPTRACK_DATADOG_ENDPOINT")
 
 	viper.BindPFlag("uptrack.datadog.appKey", serverCmd.PersistentFlags().Lookup("datadog-appKey"))
 	viper.BindEnv("uptrack.datadog.appKey", "UPTRACK_DATADOG_APPKEY")

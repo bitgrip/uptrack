@@ -44,6 +44,10 @@ func (config) PrometheusPort() int {
 	return viper.GetInt("uptrack.prometheus.port")
 
 }
+func (config) DDEndpoint() string {
+	return viper.GetString("uptrack.datadog.endpoint")
+
+}
 
 func (config) DDApiKey() string {
 	return viper.GetString("uptrack.datadog.apiKey")

@@ -1,18 +1,17 @@
 package metrics
 
 import (
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/api/dd"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"fmt"
-	"github.com/signalsciences/dogdirect"
 	"net/url"
 )
 
 // datadogRegistry is a wrapper to forward Registry actions
 // to a collection of Registries
 type datadogRegistry struct {
-	Client               *dogdirect.Client
-	Periodic             *dogdirect.Periodic
+	Client               *dd.Client
 	ExecutionCounterTags ddTags
 	tagsForChecks        map[string]ddTagStruct
 	keysForChecks        map[string]metricKeys
@@ -56,12 +55,10 @@ type metricKeys struct {
 }
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
-	api := dogdirect.NewAPI(config.DDApiKey(), config.DDAppKey(), config.DDInterval())
-	client := dogdirect.New(replaceAll(descriptor.Name, " "), api)
-	periodicClient := dogdirect.NewPeriodic(client, config.DDInterval())
-
+	api := dd.NewAPI(config.DDEndpoint(), config.DDApiKey(), config.DDAppKey())
+	client := dd.NewClient(replaceAll(descriptor.Name, " "), api)
+	client.Watch(config.DDInterval())
 	localTagsForChecks := make(map[string]ddTagStruct, 5)
-
 	localKeysForChecks := make(map[string]metricKeys, 5)
 
 	for name, upJob := range descriptor.UpJobs {
@@ -101,10 +98,11 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 		checkName:   "uptrack_counter",
 	}
 
-	return &datadogRegistry{Client: client, Periodic: periodicClient,
+	d := &datadogRegistry{Client: client,
 		keysForChecks:        localKeysForChecks,
 		tagsForChecks:        localTagsForChecks,
 		ExecutionCounterTags: executionCounterTags}
+	return d
 }
 
 func (r *datadogRegistry) IncExecution(job string) {
@@ -147,7 +145,6 @@ func (r *datadogRegistry) SetBytesReceived(job string, bytes float64) {
 
 func (r *datadogRegistry) SetIpsRatio(job string, ratio float64) {
 	r.Client.Gauge(r.keysForChecks[job].DNSIpsRatio, ratio, r.tagsForChecks[job].DNSIpsRatio.toTagList())
-
 }
 
 func (t ddTags) toTagList() []string {
@@ -161,7 +158,7 @@ func keys(project string, job string, check string) string {
 
 	project = replaceAll(project, " +")
 
-	return fmt.Sprintf("%s.%s.%s.%s", metricsRootName, project, job, check) // metricsRootName
+	return fmt.Sprintf("%s.%s.%s.%s", metricsRootName, job, project, check)
 }
 
 func setDnsJobTags(descriptor job.Descriptor, dnsJob job.DnsJob, name string) ddTags {

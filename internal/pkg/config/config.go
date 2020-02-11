@@ -23,6 +23,7 @@ type Config interface {
 	PrometheusEndpoint() string
 	PrometheusPort() int
 	DatadogCredentials() string
+	DDEndpoint() string
 	DDApiKey() string
 	DDAppKey() string
 	DDInterval() time.Duration

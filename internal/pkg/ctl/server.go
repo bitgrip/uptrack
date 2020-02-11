@@ -73,7 +73,9 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 		//count iterations
 		registry.IncExecution(descriptor.Name)
 		for _, upJob := range descriptor.UpJobs {
+
 			doUpChecks(registry, upJob)
+
 		}
 
 		for _, dnsJob := range descriptor.DNSJobs {
@@ -87,7 +89,7 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 		}
 
 		time.Sleep(duration)
-		println(duration)
+
 	}
 
 }
