@@ -158,7 +158,7 @@ func keys(project string, job string, check string) string {
 
 	project = replaceAll(project, " +")
 
-	return fmt.Sprintf("%s.%s.%s.%s", metricsRootName, job, project, check)
+	return fmt.Sprintf("%s.%s.%s.%s", metricsRootName, project, job, check)
 }
 
 func setDnsJobTags(descriptor job.Descriptor, dnsJob job.DnsJob, name string) ddTags {
