@@ -8,20 +8,24 @@ import (
 
 // Descriptor represents a JOB document
 type Descriptor struct {
-	Name    string            `json:"project,omitempty" yaml:"project,omitempty"`
-	BaseURL string            `json:"base_url,omitempty" yaml:"base_url,omitempty"`
-	UpJobs  map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
-	DNSJobs map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
+	Name              string            `json:"project,omitempty" yaml:"project,omitempty"`
+	BaseURL           string            `json:"base_url,omitempty" yaml:"base_url,omitempty"`
+	UpJobs            map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
+	DNSJobs           map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
+	DatadogEnabled    bool              `json:"datadog_enabled,omitempty" yaml:"datadog_enabled,omitempty"`
+	PrometheusEnabled bool              `json:"prometheus_enabled,omitempty" yaml:"prometheus_enabled,omitempty"`
 }
 
 func DescriptorFromFile(path string) (Descriptor, error) {
-	d := Descriptor{}
+	d := Descriptor{
+		DatadogEnabled:    true,
+		PrometheusEnabled: true,
+	}
 	data, _ := ioutil.ReadFile(path)
 	err := yaml.Unmarshal(data, &d)
 
 	for name, upJob := range d.UpJobs {
 		upJob.Name = name
-		upJob.ConcatUrl(d.BaseURL)
 		d.UpJobs[name] = upJob
 	}
 
@@ -35,10 +39,10 @@ func DescriptorFromFile(path string) (Descriptor, error) {
 // UpJob is a check if a HTTP endpoint is up and able to serve required method
 type UpJob struct {
 	Name       string
-	Method     Method `json:"method,omitempty" yaml:"method,omitempty"`
-	Expected   int    `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
-	URLSuffix  string `json:"url_suffix,omitempty" yaml:"url_suffix,omitempty"`
-	URL        string
+	Host       string      `json:"host" yaml:"host"`
+	URL        string      `json:"url" yaml:"url"`
+	Method     Method      `json:"method,omitempty" yaml:"method,omitempty"`
+	Expected   int         `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
 	Header     http.Header `json:"header,omitempty" yaml:"headers,omitempty"`
 	PlainBody  string      `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
 	Base64Body string      `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
@@ -76,6 +80,7 @@ const (
 // DnsJob is verifying if a fqdn is looked up to the expected set of IPs
 type DnsJob struct {
 	Name string
-	FQDN string   `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
-	IPs  []string `json:"ips,omitempty" yaml:"ips,omitempty"`
+	Host string   `json:"host" yaml:"host"`
+	FQDN string   `json:"fqdn" yaml:"fqdn"`
+	IPs  []string `json:"ips" yaml:"ips"`
 }

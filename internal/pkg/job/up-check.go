@@ -2,7 +2,6 @@ package job
 
 import (
 	"encoding/base64"
-	"fmt"
 	"io"
 )
 
@@ -18,9 +17,4 @@ func (j *UpJob) Body() io.Reader {
 		return strings.NewReader(string(decoded))
 	}
 	return nil
-}
-
-// URL combines the current URI with the given baseURL if not empty
-func (j *UpJob) ConcatUrl(baseURL string) {
-	j.URL = fmt.Sprintf("%s%s", strings.TrimSpace(baseURL), strings.TrimSpace(j.URLSuffix))
 }

@@ -1,10 +1,12 @@
 package metrics
 
 import (
+	"math"
+
+	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"math"
 )
 
 // prometheusRegistry is a wrapper to forward Registry actions
@@ -14,13 +16,6 @@ type prometheusRegistry struct {
 	metricsForUpChecks  map[string]metrics
 	metricsForDnsChecks map[string]metrics
 }
-
-const jobName string = "job"
-const checkName string = "check"
-const URL string = "URL"
-const host = "host"
-const FQDN string = "FQDN"
-const projectName = "project"
 
 type metrics struct {
 	CanConnect    prometheus.Counter
@@ -33,30 +28,10 @@ type metrics struct {
 	DNSIpsRatio   prometheus.Gauge
 }
 
-const (
-	//suffixes for metric keys
-	prCanConnect    string = "connection_successful"
-	prCannotConnect string = "connection_failed"
-	prSSLDaysLeft   string = "ssl_days_left"
-	prConnectTime   string = "connection_time"
-	prTTFB          string = "TTFB"
-	prRequestTime   string = "request_time"
-	prBytesReceived string = "bytes_received"
-	prFoundIps      string = "found_ips_ratio"
-
-	//prefixes for metric keys
-	prNamespace          string = "uptrack"
-	prNameUpcheckCounter string = "upcheck_counter"
-	prNameUpCheckGauge   string = "upcheck_gauge"
-
-	prNameDnsCheckCounter string = "upcheck_counter"
-	prNameDnsCheckGauge   string = "dnscheck_gauge"
-)
-
 func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
 	projectName := replaceAll(descriptor.Name, " +")
 	exec := promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: prNamespace,
+		Namespace: cons.PromNamespace,
 		Name:      "counter",
 		ConstLabels: prometheus.Labels{
 			projectName: projectName,
@@ -66,87 +41,88 @@ func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
 	localMetricsForChecks := make(map[string]metrics, 5)
 	for name, upJob := range descriptor.UpJobs {
 		localMetricsForChecks[name] = metrics{
-			CanConnect:    checkCounter(projectName, prCanConnect, upJob),
-			CannotConnect: checkCounter(projectName, prCannotConnect, upJob),
-			SSLDaysLeft:   upGauge(projectName, prSSLDaysLeft, upJob),
-			ConnectTime:   upGauge(projectName, prConnectTime, upJob),
-			TTFB:          upGauge(projectName, prTTFB, upJob),
-			RequestTime:   upGauge(projectName, prRequestTime, upJob),
-			BytesReceived: upGauge(projectName, prBytesReceived, upJob),
+			CanConnect:    checkCounter(projectName, cons.PromCanConnect, upJob),
+			CannotConnect: checkCounter(projectName, cons.PromCannotConnect, upJob),
+			SSLDaysLeft:   upGauge(projectName, cons.PromSSLDaysLeft, upJob),
+			ConnectTime:   upGauge(projectName, cons.PromConnectTime, upJob),
+			TTFB:          upGauge(projectName, cons.PromTTFB, upJob),
+			RequestTime:   upGauge(projectName, cons.PromRequestTime, upJob),
+			BytesReceived: upGauge(projectName, cons.PromBytesReceived, upJob),
 		}
 	}
 	localMetricsForDns := make(map[string]metrics, 5)
 
 	for name, dnsJob := range descriptor.DNSJobs {
 		localMetricsForDns[name] = metrics{
-			DNSIpsRatio: dnsGauge(projectName, prFoundIps, dnsJob),
+			DNSIpsRatio: dnsGauge(projectName, cons.PromFoundIps, dnsJob),
 		}
 	}
 
 	return &prometheusRegistry{Execution: exec, metricsForUpChecks: localMetricsForChecks, metricsForDnsChecks: localMetricsForDns}
 }
 
-func checkCounter(project string, name string, job job.UpJob) prometheus.Counter {
+func checkCounter(project string, check string, upJob job.UpJob) prometheus.Counter {
 	return promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: prNamespace,
-		Name:      prNameUpcheckCounter,
+		Namespace: cons.PromNamespace,
+		Name:      cons.PromNameUpcheckCounter,
 		ConstLabels: prometheus.Labels{
-			projectName: project,
-			jobName:     job.Name,
-			checkName:   name,
-			URL:         job.URL,
+			cons.ProjectName: project,
+			cons.JobName:     upJob.Name,
+			cons.Host:        upJob.Host,
+			cons.CheckName:   check,
+			cons.UrlString:   upJob.URL,
 		},
 	})
 }
 
-func dnsCounter(project string, name string, job job.DnsJob) prometheus.Counter {
+func dnsCounter(project string, check string, dnsJob job.DnsJob) prometheus.Counter {
 	return promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: prNamespace,
-		Name:      prNameDnsCheckCounter,
+		Namespace: cons.PromNamespace,
+		Name:      cons.PromNameDnsCheckCounter,
 		ConstLabels: prometheus.Labels{
-			projectName: project,
-			jobName:     job.Name,
-			checkName:   name,
-			FQDN:        job.FQDN,
+			cons.ProjectName: project,
+			cons.JobName:     dnsJob.Name,
+			cons.Host:        dnsJob.Host,
+			cons.CheckName:   check,
+			cons.FQDN:        dnsJob.FQDN,
 		},
 	})
 }
 
-func upGauge(project string, name string, job job.UpJob) prometheus.Gauge {
+func upGauge(project string, check string, upJob job.UpJob) prometheus.Gauge {
 	return promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: prNamespace,
-		Name:      prNameUpCheckGauge,
+		Namespace: cons.PromNamespace,
+		Name:      cons.PromNameUpCheckGauge,
 		ConstLabels: prometheus.Labels{
-			projectName: project,
-			jobName:     job.Name,
-			checkName:   name,
-			URL:         job.URL,
+			cons.ProjectName: project,
+			cons.JobName:     upJob.Name,
+			cons.Host:        upJob.Host,
+			cons.CheckName:   check,
+			cons.UrlString:   upJob.URL,
 		},
 	})
 }
 
-func dnsGauge(project string, name string, job job.DnsJob) prometheus.Gauge {
+func dnsGauge(project string, check string, dnsJob job.DnsJob) prometheus.Gauge {
 	return promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: prNamespace,
-		Name:      prNameDnsCheckGauge,
+		Namespace: cons.PromNamespace,
+		Name:      cons.PromNameDnsCheckGauge,
 		ConstLabels: prometheus.Labels{
-			projectName: project,
-			jobName:     job.Name,
-			checkName:   name,
-			FQDN:        job.FQDN,
+			cons.ProjectName: project,
+			cons.JobName:     dnsJob.Name,
+			cons.Host:        dnsJob.Host,
+			cons.CheckName:   check,
+			cons.FQDN:        dnsJob.FQDN,
 		},
 	})
 }
-func (r *prometheusRegistry) IncExecution(name string) {
-	r.Execution.Inc()
-}
 
-func (r *prometheusRegistry) IncCanConnect(name string) {
+func (r *prometheusRegistry) CanConnect(name string) {
 	r.metricsForUpChecks[name].CanConnect.Inc()
 
 }
 
-func (r *prometheusRegistry) IncCanNotConnect(name string) {
+func (r *prometheusRegistry) CanNotConnect(name string) {
 	r.metricsForUpChecks[name].CannotConnect.Inc()
 }
 

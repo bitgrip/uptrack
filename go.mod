@@ -19,6 +19,6 @@ require (
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/viper v1.4.0
 	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
-	golang.org/x/tools v0.0.0-20200211045251-2de505fc5306 // indirect
+	golang.org/x/tools v0.0.0-20200211045251-2de505fc5306
 	gopkg.in/yaml.v2 v2.2.8
 )

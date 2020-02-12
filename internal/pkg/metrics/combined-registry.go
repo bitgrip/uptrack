@@ -12,21 +12,15 @@ func NewCombinedRegistry(registries ...Registry) Registry {
 	}
 }
 
-func (r *combinedRegistry) IncExecution(job string) {
+func (r *combinedRegistry) CanConnect(job string) {
 	for _, registry := range r.registries {
-		registry.IncExecution(job)
+		registry.CanConnect(job)
 	}
 }
 
-func (r *combinedRegistry) IncCanConnect(job string) {
+func (r *combinedRegistry) CanNotConnect(job string) {
 	for _, registry := range r.registries {
-		registry.IncCanConnect(job)
-	}
-}
-
-func (r *combinedRegistry) IncCanNotConnect(job string) {
-	for _, registry := range r.registries {
-		registry.IncCanNotConnect(job)
+		registry.CanNotConnect(job)
 	}
 }
 

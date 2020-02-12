@@ -1,6 +1,7 @@
 package dd
 
 import (
+	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -31,10 +32,10 @@ func NewAPI(endpoint string, apikey string, appkey string) API {
 		timeout:  15 * time.Second,
 	}
 }
-func (a API) postMetrics(metrics []*Metric) error {
+func (a API) postSeries(series []*Metric) error {
 
 	post := map[string][]*Metric{
-		"series": metrics,
+		"series": series,
 	}
 	endpoint := fmt.Sprintf("%s/series?api_key=%s", a.endpoint, a.apikey)
 
@@ -79,18 +80,18 @@ func write(endpoint string, data interface{}, timeout time.Duration) error {
 
 	return fmt.Errorf("http status %v: %s", resp.StatusCode, string(responseBody))
 }
-func (c *Client) Watch(duration time.Duration) {
-	go c.watch(duration)
+func (c *Client) Watch(freq time.Duration) {
+	go c.watch(freq)
 }
 
-func (c *Client) watch(duration time.Duration) {
-	ticker := time.NewTicker(duration)
+func (c *Client) watch(freq time.Duration) {
+	ticker := time.NewTicker(freq)
 
 	for {
 		select {
 		case <-ticker.C:
 			if err := c.Flush(); err != nil {
-				logrus.Warn("Failed to flush metrics from client: {}", err)
+				logrus.Warn("Failed to flush metricsMap from client: {}", err)
 
 			}
 		case msg := <-c.Stop:
@@ -99,4 +100,16 @@ func (c *Client) watch(duration time.Duration) {
 			return
 		}
 	}
+}
+
+type DDTags map[string]string
+
+func (t DDTags) ToTagList() []string {
+	out := make([]string, 0)
+	for k, v := range t {
+		if k != cons.Host {
+			out = append(out, k+":"+v)
+		}
+	}
+	return unique(out)
 }

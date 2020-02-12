@@ -1,49 +1,38 @@
 package metrics
 
 import (
+	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/api/dd"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"fmt"
-	"net/url"
 )
 
 // datadogRegistry is a wrapper to forward Registry actions
 // to a collection of Registries
 type datadogRegistry struct {
 	Client               *dd.Client
-	ExecutionCounterTags ddTags
-	tagsForChecks        map[string]ddTagStruct
+	ExecutionCounterTags dd.DDTags
+	tagsForChecks        map[string]ddTags
 	keysForChecks        map[string]metricKeys
 }
 
-type ddTags map[string]string
-
 const metricsRootName = "uptrack"
 
-const (
-	ddCanConnect    string = "connection.successful"
-	ddCannotConnect string = "connection.failed"
-	ddSSLDaysLeft   string = "ssl_days_left"
-	ddConnectTime   string = "connection.time"
-	ddTTFB          string = "TTFB"
-	ddRequestTime   string = "request_time"
-	ddBytesReceived string = "bytes_received"
-	ddFoundIps      string = "found_ips_ratio"
-)
-
-type ddTagStruct struct {
-	CanConnect    ddTags
-	CannotConnect ddTags
-	SSLDaysLeft   ddTags
-	ConnectTime   ddTags
-	TTFB          ddTags
-	RequestTime   ddTags
-	BytesReceived ddTags
-	DNSIpsRatio   ddTags
+type ddTags struct {
+	Execution     dd.DDTags
+	CanConnect    dd.DDTags
+	CannotConnect dd.DDTags
+	SSLDaysLeft   dd.DDTags
+	ConnectTime   dd.DDTags
+	TTFB          dd.DDTags
+	RequestTime   dd.DDTags
+	BytesReceived dd.DDTags
+	DNSIpsRatio   dd.DDTags
 }
 
 type metricKeys struct {
+	Execution     string
 	CanConnect    string
 	CannotConnect string
 	SSLDaysLeft   string
@@ -56,128 +45,114 @@ type metricKeys struct {
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
 	api := dd.NewAPI(config.DDEndpoint(), config.DDApiKey(), config.DDAppKey())
-	client := dd.NewClient(replaceAll(descriptor.Name, " "), api)
+	ratio := config.DefaultInterval().Seconds() / config.DefaultInterval().Seconds()
+	client := dd.NewClient(api, ratio)
 	client.Watch(config.DDInterval())
-	localTagsForChecks := make(map[string]ddTagStruct, 5)
+	localTagsForChecks := make(map[string]ddTags, 5)
 	localKeysForChecks := make(map[string]metricKeys, 5)
 
 	for name, upJob := range descriptor.UpJobs {
-		localTagsForChecks[name] = ddTagStruct{
-			CanConnect:    tags(descriptor, upJob, ddCanConnect),
-			CannotConnect: tags(descriptor, upJob, ddCannotConnect),
-			SSLDaysLeft:   tags(descriptor, upJob, ddSSLDaysLeft),
-			ConnectTime:   tags(descriptor, upJob, ddConnectTime),
-			TTFB:          tags(descriptor, upJob, ddTTFB),
-			RequestTime:   tags(descriptor, upJob, ddRequestTime),
-			BytesReceived: tags(descriptor, upJob, ddBytesReceived),
+		localTagsForChecks[name] = ddTags{
+			CanConnect:    upTags(descriptor, upJob, cons.DDCanConnect),
+			CannotConnect: upTags(descriptor, upJob, cons.DDCannotConnect),
+			SSLDaysLeft:   upTags(descriptor, upJob, cons.DDSSLDaysLeft),
+			ConnectTime:   upTags(descriptor, upJob, cons.DDConnectTime),
+			TTFB:          upTags(descriptor, upJob, cons.DDTTFB),
+			RequestTime:   upTags(descriptor, upJob, cons.DDRequestTime),
+			BytesReceived: upTags(descriptor, upJob, cons.DDBytesReceived),
 		}
 
 		localKeysForChecks[name] = metricKeys{
-			CanConnect:    keys(descriptor.Name, upJob.Name, ddCanConnect),
-			CannotConnect: keys(descriptor.Name, upJob.Name, ddCannotConnect),
-			SSLDaysLeft:   keys(descriptor.Name, upJob.Name, ddSSLDaysLeft),
-			ConnectTime:   keys(descriptor.Name, upJob.Name, ddConnectTime),
-			TTFB:          keys(descriptor.Name, upJob.Name, ddTTFB),
-			RequestTime:   keys(descriptor.Name, upJob.Name, ddRequestTime),
-			BytesReceived: keys(descriptor.Name, upJob.Name, ddBytesReceived),
+			CanConnect:    keys(descriptor.Name, cons.DDCanConnect),
+			CannotConnect: keys(descriptor.Name, cons.DDCannotConnect),
+			SSLDaysLeft:   keys(descriptor.Name, cons.DDSSLDaysLeft),
+			ConnectTime:   keys(descriptor.Name, cons.DDConnectTime),
+			TTFB:          keys(descriptor.Name, cons.DDTTFB),
+			RequestTime:   keys(descriptor.Name, cons.DDRequestTime),
+			BytesReceived: keys(descriptor.Name, cons.DDBytesReceived),
 		}
 
 	}
 
 	for name, dnsJob := range descriptor.DNSJobs {
-		localTagsForChecks[name] = ddTagStruct{
-			DNSIpsRatio: setDnsJobTags(descriptor, dnsJob, ddFoundIps),
+		localTagsForChecks[name] = ddTags{
+			DNSIpsRatio: dnsTags(descriptor, dnsJob, cons.DDFoundIps),
 		}
 
 		localKeysForChecks[name] = metricKeys{
-			DNSIpsRatio: keys(descriptor.Name, dnsJob.Name, ddFoundIps),
+			DNSIpsRatio: keys(descriptor.Name, cons.DDFoundIps),
 		}
-	}
-	executionCounterTags := ddTags{
-		projectName: descriptor.Name,
-		checkName:   "uptrack_counter",
 	}
 
 	d := &datadogRegistry{Client: client,
-		keysForChecks:        localKeysForChecks,
-		tagsForChecks:        localTagsForChecks,
-		ExecutionCounterTags: executionCounterTags}
+		keysForChecks: localKeysForChecks,
+		tagsForChecks: localTagsForChecks}
 	return d
 }
 
-func (r *datadogRegistry) IncExecution(job string) {
-	r.Client.Incr(metricsRootName+"."+job+"."+"counter", r.ExecutionCounterTags.toTagList())
-}
-
-func (r *datadogRegistry) IncCanConnect(job string) {
-	r.Client.Incr(r.keysForChecks[job].CanConnect, r.tagsForChecks[job].CanConnect.toTagList())
+func (r *datadogRegistry) CanConnect(job string) {
+	r.Client.Gauge(job, r.keysForChecks[job].CanConnect, 1, r.tagsForChecks[job].CanConnect)
+	r.Client.Gauge(job, r.keysForChecks[job].CannotConnect, 0, r.tagsForChecks[job].CannotConnect)
 
 }
 
-func (r *datadogRegistry) IncCanNotConnect(job string) {
-	r.Client.Incr(r.keysForChecks[job].CannotConnect, r.tagsForChecks[job].CannotConnect.toTagList())
+func (r *datadogRegistry) CanNotConnect(job string) {
+	r.Client.Gauge(job, r.keysForChecks[job].CanConnect, 0, r.tagsForChecks[job].CanConnect)
+	r.Client.Gauge(job, r.keysForChecks[job].CannotConnect, 1, r.tagsForChecks[job].CannotConnect)
 
 }
 
 func (r *datadogRegistry) SetSSLDaysLeft(job string, daysLeft float64) {
-	r.Client.Gauge(r.keysForChecks[job].SSLDaysLeft, daysLeft, r.tagsForChecks[job].SSLDaysLeft.toTagList())
+	r.Client.Gauge(job, r.keysForChecks[job].SSLDaysLeft, daysLeft, r.tagsForChecks[job].SSLDaysLeft)
 }
 
 func (r *datadogRegistry) SetConnectTime(job string, millis float64) {
-	r.Client.Gauge(r.keysForChecks[job].ConnectTime, millis, r.tagsForChecks[job].ConnectTime.toTagList())
+	r.Client.Gauge(job, r.keysForChecks[job].ConnectTime, millis, r.tagsForChecks[job].ConnectTime)
 
 }
 
 func (r *datadogRegistry) SetTTFB(job string, millis float64) {
-	r.Client.Gauge(r.keysForChecks[job].TTFB, millis, r.tagsForChecks[job].TTFB.toTagList())
+	r.Client.Gauge(job, r.keysForChecks[job].TTFB, millis, r.tagsForChecks[job].TTFB)
 
 }
 
 func (r *datadogRegistry) SetRequestTime(job string, millis float64) {
-	r.Client.Gauge(r.keysForChecks[job].RequestTime, millis, r.tagsForChecks[job].RequestTime.toTagList())
+	r.Client.Gauge(job, r.keysForChecks[job].RequestTime, millis, r.tagsForChecks[job].RequestTime)
 
 }
 
 func (r *datadogRegistry) SetBytesReceived(job string, bytes float64) {
-	r.Client.Gauge(r.keysForChecks[job].BytesReceived, bytes, r.tagsForChecks[job].BytesReceived.toTagList())
+	r.Client.Gauge(job, r.keysForChecks[job].BytesReceived, bytes, r.tagsForChecks[job].BytesReceived)
 
 }
 
 func (r *datadogRegistry) SetIpsRatio(job string, ratio float64) {
-	r.Client.Gauge(r.keysForChecks[job].DNSIpsRatio, ratio, r.tagsForChecks[job].DNSIpsRatio.toTagList())
+	r.Client.Gauge(job, r.keysForChecks[job].DNSIpsRatio, ratio, r.tagsForChecks[job].DNSIpsRatio)
 }
 
-func (t ddTags) toTagList() []string {
-	out := make([]string, 0)
-	for k, v := range t {
-		out = append(out, k+":"+v)
-	}
-	return out
-}
-func keys(project string, job string, check string) string {
+func keys(project string, check string) string {
 
 	project = replaceAll(project, " +")
 
-	return fmt.Sprintf("%s.%s.%s.%s", metricsRootName, project, job, check)
+	return fmt.Sprintf("%s.%s.%s", metricsRootName, project, check)
 }
 
-func setDnsJobTags(descriptor job.Descriptor, dnsJob job.DnsJob, name string) ddTags {
-	return ddTags{
-		projectName: descriptor.Name,
-		jobName:     dnsJob.Name,
-		host:        dnsJob.FQDN,
-		checkName:   name,
-		FQDN:        dnsJob.FQDN,
+func dnsTags(descriptor job.Descriptor, dnsJob job.DnsJob, check string) dd.DDTags {
+	return dd.DDTags{
+		cons.ProjectName: descriptor.Name,
+		cons.JobName:     dnsJob.Name,
+		cons.Host:        dnsJob.Host,
+		cons.CheckName:   check,
+		cons.FQDN:        dnsJob.FQDN,
 	}
 }
-func tags(descriptor job.Descriptor, upJob job.UpJob, name string) ddTags {
-	u, _ := url.Parse(upJob.URL)
+func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 
-	return ddTags{
-		projectName: descriptor.Name,
-		jobName:     upJob.Name,
-		host:        u.Host,
-		checkName:   name,
-		URL:         upJob.URL,
+	return dd.DDTags{
+		cons.ProjectName: descriptor.Name,
+		cons.JobName:     upJob.Name,
+		cons.Host:        upJob.Host,
+		cons.CheckName:   name,
+		cons.UrlString:   upJob.URL,
 	}
 }

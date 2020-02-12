@@ -71,9 +71,7 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 		//having one upJob iteration per interval
 		startJobs := time.Now()
 		//count iterations
-		registry.IncExecution(descriptor.Name)
 		for _, upJob := range descriptor.UpJobs {
-
 			doUpChecks(registry, upJob)
 
 		}
@@ -95,6 +93,7 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 }
 
 func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
+
 	actIps, _ := net.LookupIP(dnsJob.FQDN)
 	actIpsS := make([]string, 0)
 	for _, v := range actIps {
@@ -148,19 +147,19 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 	}
 
 	if err != nil {
-		registry.IncCanNotConnect(jobName)
+		registry.CanNotConnect(jobName)
 
 	} else {
 		if resp.StatusCode == upJob.Expected {
 			//count successful connections
-			registry.IncCanConnect(jobName)
+			registry.CanConnect(jobName)
 
 			//measure received bytes, body+headers
 			bodyBytes, _ := ioutil.ReadAll(resp.Body)
 			registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
 
 		} else {
-			registry.IncCanNotConnect(jobName)
+			registry.CanNotConnect(jobName)
 		}
 	}
 }
