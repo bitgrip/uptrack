@@ -1,11 +1,11 @@
 package dd
 
 import (
-	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
-	"github.com/sirupsen/logrus"
 	"sort"
 	"sync"
 	"time"
+
+	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
 )
 
 // todo: make proper type
@@ -150,7 +150,6 @@ func (c *Client) finalize(nowUnix float64) {
 		c.Series[i].Hostname = m.Hostname
 		c.Series[i].Interval = int(interval)
 		if c.Series[i].Type == TypeRate {
-			logrus.Warn("XXX: ", c.Series[i].Value[0][1])
 			c.Series[i].Value[0][1] /= interval
 		}
 	}
