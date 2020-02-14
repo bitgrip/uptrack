@@ -1,14 +1,13 @@
 project: KarolsChecks
-base_url: https://www.bitgrip.de
 up_jobs:
   bitgrip_checker:
     description: 'Came for the money, stayed for the story'
-    url_suffix: /kontakt
+    url: https://www.bitgrip.de/kontakt
     method: GET
     expected_code: 301
   another:
     description: 'XXX'
-    url_suffix: /basic-auth
+    url: https://www.bitgrip.de/basic-auth
     method: GET
     headers:
       Authorization:
