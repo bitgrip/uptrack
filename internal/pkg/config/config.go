@@ -19,7 +19,7 @@ import "time"
 // Config provides information for DD and Prometheus configurations
 type Config interface {
 	JobConfigDir() string
-	DefaultInterval() time.Duration
+	CheckFrequency() time.Duration
 	PrometheusEndpoint() string
 	PrometheusPort() int
 	DatadogCredentials() string

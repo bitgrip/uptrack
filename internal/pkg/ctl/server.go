@@ -37,7 +37,7 @@ import (
 // * Start and Listening the UpTrack Server
 func StartUpTrackServer(config config.Config) error {
 	logrus.Info("Start UpTrack server")
-	logrus.Info(fmt.Sprintf("Use default interval %v", config.DefaultInterval()))
+	logrus.Info(fmt.Sprintf("Use default interval %v", config.CheckFrequency()))
 	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
 
 	endpoint := config.PrometheusEndpoint()
@@ -54,7 +54,7 @@ func StartUpTrackServer(config config.Config) error {
 	)
 	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
 
-	go runJobs(descriptor, registry, config.DefaultInterval())
+	go runJobs(descriptor, registry, config.CheckFrequency())
 
 	// starting server with prometheus endpoint
 	http.Handle(endpoint, promhttp.Handler())
@@ -73,13 +73,11 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 		//count iterations
 		for _, upJob := range descriptor.UpJobs {
 			doUpChecks(registry, upJob)
-
 		}
 
 		for _, dnsJob := range descriptor.DNSJobs {
 			doDnsChecks(registry, dnsJob)
 		}
-
 		duration := startJobs.Add(interval).Sub(time.Now())
 
 		if duration.Milliseconds() < 0 {
@@ -94,7 +92,15 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 
 func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
 
-	actIps, _ := net.LookupIP(dnsJob.FQDN)
+	jobName := dnsJob.Name
+	actIps, err := net.LookupIP(dnsJob.FQDN)
+
+	if err != nil {
+		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
+
+		return
+	}
+
 	actIpsS := make([]string, 0)
 	for _, v := range actIps {
 		actIpsS = append(actIpsS, v.String())
@@ -103,9 +109,9 @@ func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
 
 	intersecIps := GetIntersecting(expIps, actIpsS)
 	if len(expIps) == 0 {
-		registry.SetIpsRatio(dnsJob.Name, 0)
+		registry.SetIpsRatio(jobName, 0)
 	}
-	registry.SetIpsRatio(dnsJob.Name, float64(len(intersecIps)/len(expIps)))
+	registry.SetIpsRatio(jobName, float64(len(intersecIps)/len(expIps)))
 }
 
 func GetIntersecting(expIps []string, actIps []string) []string {
@@ -137,6 +143,11 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 	//measure request time
 	startReq := time.Now()
 	resp, err := t.RoundTrip(req)
+	if err != nil {
+		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
+		registry.IncCanNotConnect(jobName)
+		return
+	}
 	endReq := time.Since(startReq)
 	registry.SetRequestTime(jobName, float64(endReq.Milliseconds()))
 
@@ -146,20 +157,15 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 		registry.SetSSLDaysLeft(jobName, hours/24)
 	}
 
-	if err != nil {
-		registry.CanNotConnect(jobName)
+	if resp.StatusCode == upJob.Expected {
+		//count successful connections
+		registry.IncCanConnect(jobName)
+
+		//measure received bytes, body+headers
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
 
 	} else {
-		if resp.StatusCode == upJob.Expected {
-			//count successful connections
-			registry.CanConnect(jobName)
-
-			//measure received bytes, body+headers
-			bodyBytes, _ := ioutil.ReadAll(resp.Body)
-			registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
-
-		} else {
-			registry.CanNotConnect(jobName)
-		}
+		registry.IncCanNotConnect(jobName)
 	}
 }

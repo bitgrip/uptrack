@@ -12,18 +12,18 @@ import (
 const (
 	TypeGauge   = "gauge"
 	TypeRate    = "rate"
-	TypeCounter = "counter"
+	TypeCounter = "count"
 )
 
 // Metric is a data structure that represents the JSON that Datadog
 // expects when posting to the API
 type Metric struct {
-	Name     string        `json:"metric"`
-	Value    [1][2]float64 `json:"points"`
-	Type     string        `json:"type"`
-	Hostname string        `json:"host,omitempty"`
-	Tags     []string      `json:"tags,omitempty"`
-	Interval int           `json:"ratio,omitempty"`
+	Name     string      `json:"metric"`
+	Value    [][]float64 `json:"points"`
+	Type     string      `json:"type"`
+	Hostname string      `json:"host,omitempty"`
+	Tags     []string    `json:"tags,omitempty"`
+	Interval int         `json:"ratio,omitempty"`
 }
 
 func now() float64 {
@@ -37,6 +37,7 @@ func NewMetric(name string, host string, mtype string, tags []string) *Metric {
 		Hostname: host,
 		Type:     mtype,
 		Tags:     tags,
+		Value:    make([][]float64, 0),
 	}
 }
 
@@ -51,9 +52,9 @@ type Client struct {
 	lastFlush  float64            // unix epoch as float64(t.Now().Unix())
 	Stop       chan string
 	sync.Mutex
+	Interval float64
 }
 
-// NewClient creates a new datadog metricsMap client
 func NewClient(api API, in float64) *Client {
 	client := &Client{
 		now:        now,
@@ -62,34 +63,48 @@ func NewClient(api API, in float64) *Client {
 		api:        api,
 		lastFlush:  now(),
 		Stop:       make(chan string),
+		Interval:   in,
 	}
 	return client
 }
 
-// Gauge represents an observation
+// Gauge represents a series of observations, one for each current timestamp
 func (c *Client) Gauge(jobName string, checkName string, value float64, tags DDTags) error {
 	c.Lock()
 	m, ok := c.metricsMap[jobName+checkName]
 	if !ok {
 		m = NewMetric(checkName, tags[cons.Host], TypeGauge, tags.ToTagList())
 		c.Series = append(c.Series, m)
-		c.metricsMap[checkName] = m
+		c.metricsMap[jobName+checkName] = m
 	}
-	m.Value[0][1] = value
+	m.Value = append(m.Value, []float64{now(), value})
 	c.Unlock()
 	return nil
 }
 
-// Rate represents a count of events
 func (c *Client) Rate(jobName string, checkName string, value float64, tags DDTags) error {
+	return c.count(jobName, checkName, value, tags, TypeRate)
+}
+
+func (c *Client) Count(jobName string, checkName string, value float64, tags DDTags) error {
+	return c.count(jobName, checkName, value, tags, TypeCounter)
+}
+
+// stores the count for a given time interval (DDInterval)
+func (c *Client) count(jobName string, checkName string, value float64, tags DDTags, typ string) error {
 	c.Lock()
 	m, ok := c.metricsMap[jobName+checkName]
 	if !ok {
-		m = NewMetric(checkName, tags[cons.Host], TypeRate, tags.ToTagList())
+		m = NewMetric(checkName, tags[cons.Host], typ, tags.ToTagList())
 		c.Series = append(c.Series, m)
-		c.metricsMap[checkName] = m
+		c.metricsMap[jobName+checkName] = m
+		m.Value = append(m.Value, []float64{now(), value})
+		c.Unlock()
+		return nil
 	}
 	m.Value[0][1] += value
+	m.Value[0][0] = now()
+
 	c.Unlock()
 	return nil
 }
@@ -109,15 +124,6 @@ func (c *Client) Hist(jobName string, checkName string, val float64, tags DDTags
 	h.Add(c, jobName, checkName, val)
 
 	return nil
-}
-
-func (c *Client) Incr(jobName string, checkName string, tags DDTags) error {
-
-	return c.Rate(jobName, checkName, 1.0, tags)
-}
-
-func (c *Client) Decr(jobName string, checkName string, tags DDTags) error {
-	return c.Rate(jobName, checkName, -1.0, tags)
 }
 
 func (c *Client) Snapshot() *Client {
@@ -141,12 +147,9 @@ func (c *Client) Snapshot() *Client {
 	return &snap
 }
 
-// not locked.. for use locally with snapshots
-func (c *Client) finalize(nowUnix float64) {
-	interval := nowUnix - c.lastFlush
+func (c *Client) finalize(interval float64) {
 
 	for i, m := range c.Series {
-		c.Series[i].Value[0][0] = nowUnix
 		c.Series[i].Hostname = m.Hostname
 		c.Series[i].Interval = int(interval)
 		if c.Series[i].Type == TypeRate {
@@ -164,7 +167,7 @@ func (c *Client) Flush() error {
 	if snap == nil {
 		return nil
 	}
-	snap.finalize(c.lastFlush)
+	snap.finalize(c.Interval)
 
 	return c.api.postSeries(snap.Series)
 }

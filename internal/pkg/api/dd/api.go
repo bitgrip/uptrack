@@ -1,18 +1,17 @@
 package dd
 
 import (
-	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
-)
 
-const endpointv1 = "https://api.datadoghq.com/api/v1"
+	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
+	"github.com/sirupsen/logrus"
+)
 
 type API struct {
 	apikey   string
@@ -22,9 +21,6 @@ type API struct {
 }
 
 func NewAPI(endpoint string, apikey string, appkey string) API {
-	if endpoint == "" {
-		endpoint = endpointv1
-	}
 	return API{
 		apikey:   apikey,
 		appkey:   appkey,
@@ -34,17 +30,12 @@ func NewAPI(endpoint string, apikey string, appkey string) API {
 }
 func (a API) postSeries(series []*Metric) error {
 
+	timeout := a.timeout
+
 	post := map[string][]*Metric{
 		"series": series,
 	}
-	endpoint := fmt.Sprintf("%s/series?api_key=%s", a.endpoint, a.apikey)
-
-	return write(endpoint, post, a.timeout)
-}
-
-// writes a json blob
-func write(endpoint string, data interface{}, timeout time.Duration) error {
-	raw, err := json.Marshal(data)
+	raw, err := json.Marshal(post)
 	if err != nil {
 		return err
 	}
@@ -54,11 +45,18 @@ func write(endpoint string, data interface{}, timeout time.Duration) error {
 	}
 
 	body := bytes.NewReader(raw)
-	req, err := http.NewRequest(http.MethodPost, endpoint, body)
+	req, err := http.NewRequest(http.MethodPost, a.endpoint, body)
+
+	q := req.URL.Query()
+	q.Add("api_key", a.apikey)
+	req.URL.RawQuery = q.Encode()
+
+	//set Headers
+	req.Header.Set("Content-Type", "application/json")
+
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
 		if urlErr, ok := err.(*url.Error); ok {
@@ -91,11 +89,10 @@ func (c *Client) watch(freq time.Duration) {
 		select {
 		case <-ticker.C:
 			if err := c.Flush(); err != nil {
-				logrus.Warn("Failed to flush metricsMap from client: {}", err)
-
+				logrus.Warn(fmt.Sprintf("Failed to flush metricsMap from client: %s", err))
 			}
 		case msg := <-c.Stop:
-			logrus.Error("Datadog Client stopped: {}", msg)
+			logrus.Error(fmt.Sprintf("Datadog Client stopped: %s", msg))
 			ticker.Stop()
 			return
 		}

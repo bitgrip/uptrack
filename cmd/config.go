@@ -28,8 +28,8 @@ func (config) JobConfigDir() string {
 	return viper.GetString("uptrack.jobs_config")
 }
 
-func (config) DefaultInterval() time.Duration {
-	return time.Duration(viper.GetInt("uptrack.default_interval")) * time.Second
+func (config) CheckFrequency() time.Duration {
+	return time.Duration(viper.GetInt("uptrack.check_frequency")) * time.Second
 }
 
 func (config) DatadogCredentials() string {

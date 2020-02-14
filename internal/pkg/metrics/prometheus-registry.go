@@ -99,6 +99,7 @@ func upGauge(project string, check string, upJob job.UpJob) prometheus.Gauge {
 			cons.Host:        upJob.Host,
 			cons.CheckName:   check,
 			cons.UrlString:   upJob.URL,
+			cons.ReqMethod:   string(upJob.Method),
 		},
 	})
 }
@@ -117,12 +118,12 @@ func dnsGauge(project string, check string, dnsJob job.DnsJob) prometheus.Gauge 
 	})
 }
 
-func (r *prometheusRegistry) CanConnect(name string) {
+func (r *prometheusRegistry) IncCanConnect(name string) {
 	r.metricsForUpChecks[name].CanConnect.Inc()
 
 }
 
-func (r *prometheusRegistry) CanNotConnect(name string) {
+func (r *prometheusRegistry) IncCanNotConnect(name string) {
 	r.metricsForUpChecks[name].CannotConnect.Inc()
 }
 

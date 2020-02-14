@@ -1,11 +1,12 @@
 package metrics
 
 import (
+	"fmt"
+
 	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/api/dd"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
-	"fmt"
 )
 
 // datadogRegistry is a wrapper to forward Registry actions
@@ -45,8 +46,7 @@ type metricKeys struct {
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
 	api := dd.NewAPI(config.DDEndpoint(), config.DDApiKey(), config.DDAppKey())
-	ratio := config.DefaultInterval().Seconds() / config.DefaultInterval().Seconds()
-	client := dd.NewClient(api, ratio)
+	client := dd.NewClient(api, config.DDInterval().Seconds())
 	client.Watch(config.DDInterval())
 	localTagsForChecks := make(map[string]ddTags, 5)
 	localKeysForChecks := make(map[string]metricKeys, 5)
@@ -90,13 +90,13 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 	return d
 }
 
-func (r *datadogRegistry) CanConnect(job string) {
+func (r *datadogRegistry) IncCanConnect(job string) {
 	r.Client.Gauge(job, r.keysForChecks[job].CanConnect, 1, r.tagsForChecks[job].CanConnect)
 	r.Client.Gauge(job, r.keysForChecks[job].CannotConnect, 0, r.tagsForChecks[job].CannotConnect)
 
 }
 
-func (r *datadogRegistry) CanNotConnect(job string) {
+func (r *datadogRegistry) IncCanNotConnect(job string) {
 	r.Client.Gauge(job, r.keysForChecks[job].CanConnect, 0, r.tagsForChecks[job].CanConnect)
 	r.Client.Gauge(job, r.keysForChecks[job].CannotConnect, 1, r.tagsForChecks[job].CannotConnect)
 
@@ -154,5 +154,6 @@ func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 		cons.Host:        upJob.Host,
 		cons.CheckName:   name,
 		cons.UrlString:   upJob.URL,
+		cons.ReqMethod:   string(upJob.Method),
 	}
 }

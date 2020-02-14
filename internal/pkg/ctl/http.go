@@ -28,7 +28,7 @@ func trace(registry metrics.Registry, name string) httptrace.ClientTrace {
 	}
 }
 
-//the pupose of a handwritten Transport is to have a clean uncached request in each iteration.
+//the purpose of a handwritten Transport is to have a clean uncached request in each iteration.
 func transport() http.Transport {
 	return http.Transport{
 		Proxy: http.ProxyFromEnvironment,

@@ -5,8 +5,8 @@ import "regexp"
 // Registry is a datastore to collect metrics
 type Registry interface {
 	// General
-	CanConnect(job string)
-	CanNotConnect(job string)
+	IncCanConnect(job string)
+	IncCanNotConnect(job string)
 	// SSL Check
 	SetSSLDaysLeft(job string, daysLeft float64)
 	// HTTP Check
