@@ -7,7 +7,6 @@ pipeline {
   environment {
     DOCKER_USER = "${userID()}"
     DOCKER_GROUP = "${groupID('docker')}"
-    DOCKER_VERSION_SUFFIX = '-0.1.5'
     IMAGE_PUSH_REGISTRY = 'https://docker-push.bitgrip.berlin'
     IMAGE_REPOSITORY = 'bitgrip'
     GIT_HOST = "bitbucket.org"
@@ -22,7 +21,7 @@ pipeline {
 
     BUILD_DATE = """${sh(
             returnStdout: true,
-            script: ' date -u +%Y-%m-%dT%H:%M:%SZ'
+            script: "date -u '+%Y-%m-%dT%H:%M:%SZ'"
     ).trim()}"""
 
     VCS_REF = """${sh(
