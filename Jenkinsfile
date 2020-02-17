@@ -13,6 +13,23 @@ pipeline {
     GIT_HOST = "bitbucket.org"
     GIT_EMAIL = "bolt@bitgrip.berlin"
     GIT_LOGIN = "boltbitgrip"
+
+
+    EXTENDED_IMAGE_TAG = """${sh(
+            returnStdout: true,
+            script: 'git describe --tags'
+    ).trim}"""
+
+    BUILD_DATE = """${sh(
+            returnStdout: true,
+            script: ' date -u +%Y-%m-%dT%H:%M:%SZ'
+    ).trim()}"""
+
+    VCS_REF = """${sh(
+            returnStdout: true,
+            script: 'git rev-parse --short HEAD'
+    ).trim()}"""
+
   }
   stages {
     stage('Build and Push Uptrack Image') {
@@ -27,8 +44,9 @@ pipeline {
       }
       steps {
         script {
-          env.EXTENDED_IMAGE_TAG = "git describe --tags"
-          def image = docker.build("${IMAGE_REPOSITORY}/uptrack:${EXTENDED_IMAGE_TAG}", "--squash --pull . --build-arg BUILD_DATE=\$(date -u +'%Y-%m-%dT%H:%M:%SZ')  VCS_REF='git rev-parse --short HEAD'")
+
+
+          def image = docker.build("${IMAGE_REPOSITORY}/uptrack:${EXTENDED_IMAGE_TAG}", "--squash --pull . --build-arg BUILD_DATE=${BUILD_DATE}  VCS_REF=${VCS_REF} --short HEAD'")
           docker.withRegistry("${IMAGE_PUSH_REGISTRY}", 'bg-system') {
             image.push()
           }
