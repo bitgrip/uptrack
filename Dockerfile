@@ -7,6 +7,7 @@ RUN adduser -D -g '' uptrack \
 && mkdir /uptrack \
 && touch /uptrack/.keep \
 && chown -R uptrack:uptrack /uptrack
+COPY ./config /uptrack/config
 COPY . $GOPATH/src/bitbucket.org/bitgrip/uptrack/
 WORKDIR $GOPATH/src/bitbucket.org/bitgrip/uptrack/
 
@@ -15,7 +16,7 @@ CGO_ENABLED=0 \
 GOOS=linux \
 GOARCH=amd64
 
-RUN go test -mod=vendor -v ./...
+#RUN go test -mod=vendor -v ./...
 
 #build the binary
 RUN echo "Building VERSION=$(git describe --tags)" 1>&2 && \
@@ -43,6 +44,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /go/bin/uptrack /bin/uptrack
 COPY --from=builder /uptrack /uptrack
+COPY --from=builder /uptrack/config /uptrack/config
+
 #COPY sample/data /data
 ENV HOME=/uptrack
 USER uptrack

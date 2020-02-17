@@ -30,11 +30,11 @@ Even though you may configure the uptrack server via `UPTRACK_CONFIG`, you can o
 UPTRACK_JOBS_CONFIG
 location of the jobs descriptor, see /config/jobs.yaml as template
    
-UPTRACK_DEFAULT_INTERVAL
+UPTRACK_CHECK_FREQUENCY
 how often checks are performed
    
 UPTRACK_PROMETHEUS_PORT
-port where prometheus server is exosed
+port where prometheus server is exposed
 
 UPTRACK_PROMETHEUS_ENDPOINT
 availabel prometheus endpoint for scraping
