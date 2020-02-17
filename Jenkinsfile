@@ -18,16 +18,16 @@ pipeline {
             returnStdout: true,
             script: 'git describe --tags'
     ).trim()}"""
-
-    BUILD_DATE = """${sh(
-            returnStdout: true,
-            script: "date -u '+%Y-%m-%dT%H:%M:%SZ'"
-    ).trim()}"""
-
-    VCS_REF = """${sh(
-            returnStdout: true,
-            script: 'git rev-parse --short HEAD'
-    ).trim()}"""
+//
+//    BUILD_DATE = """${sh(
+//            returnStdout: true,
+//            script: "date -u '+%Y-%m-%dT%H:%M:%SZ'"
+//    ).trim()}"""
+//
+//    VCS_REF = """${sh(
+//            returnStdout: true,
+//            script: 'git rev-parse --short HEAD'
+//    ).trim()}"""
 
 
   }
@@ -46,7 +46,7 @@ pipeline {
         script {
 
 
-          def image = docker.build("${IMAGE_REPOSITORY}/uptrack:${EXTENDED_IMAGE_TAG}", "--squash --pull . --build-arg BUILD_DATE=${BUILD_DATE}  VCS_REF=${VCS_REF} --short HEAD'")
+          def image = docker.build("${IMAGE_REPOSITORY}/uptrack:${EXTENDED_IMAGE_TAG}", "--squash --pull . --short HEAD'")
           docker.withRegistry("${IMAGE_PUSH_REGISTRY}", 'bg-system') {
             image.push()
           }
