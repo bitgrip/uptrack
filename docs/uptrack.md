@@ -19,6 +19,6 @@ uptrack is a service to steadily check the uptime of your HTTP services
 
 * [uptrack completion](uptrack_completion.md)	 - Generates bash completion scripts
 * [uptrack gen-doc](uptrack_gen-doc.md)	 - genrates the markdown documentation
-* [uptrack server](uptrack_server.md)	 - Interact to the server
+* [uptrack server](uptrack_server.md)	 - Interact with the uptrack server
 * [uptrack version](uptrack_version.md)	 - version of uptrack
 

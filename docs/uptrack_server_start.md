@@ -1,6 +1,6 @@
 ## uptrack server start
 
-Start the server
+Start the uptrack server
 
 ### Synopsis
 
@@ -19,10 +19,11 @@ uptrack server start [flags]
 ### Options inherited from parent commands
 
 ```
+      --check-frequency int          Default interval to execute job (default 10)
       --datadog-apiKey string        Datadog API-Key
       --datadog-appKey string        Datadog APP-key
+      --datadog-endpoint string      Datadog Endpoint (default "https://api.datadoghq.com/api/v1/series")
       --datadog-interval int         Interval for sending metrics to Datadog (default 5)
-      --default-interval int         Default interval to execute job (default 10)
       --jobs-config string           Descriptor file defining all checks (default "./config/jobs.yaml")
       --log-json                     if to log using json format
       --prometheus-endpoint string   Prometheus Endpoint (default "/metrics")
@@ -33,5 +34,5 @@ uptrack server start [flags]
 
 ### SEE ALSO
 
-* [uptrack server](uptrack_server.md)	 - Interact to the server
+* [uptrack server](uptrack_server.md)	 - Interact with the uptrack server
 

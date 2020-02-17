@@ -1,18 +1,19 @@
 ## uptrack server
 
-Interact to the server
+Interact with the uptrack server
 
 ### Synopsis
 
-Start, configure and interact with the uptrack server
+Configure and interact with the uptrack server
 
 ### Options
 
 ```
+      --check-frequency int          Default interval to execute job (default 10)
       --datadog-apiKey string        Datadog API-Key
       --datadog-appKey string        Datadog APP-key
+      --datadog-endpoint string      Datadog Endpoint (default "https://api.datadoghq.com/api/v1/series")
       --datadog-interval int         Interval for sending metrics to Datadog (default 5)
-      --default-interval int         Default interval to execute job (default 10)
   -h, --help                         help for server
       --jobs-config string           Descriptor file defining all checks (default "./config/jobs.yaml")
       --prometheus-endpoint string   Prometheus Endpoint (default "/metrics")
@@ -30,5 +31,5 @@ Start, configure and interact with the uptrack server
 ### SEE ALSO
 
 * [uptrack](uptrack.md)	 - track down your uptime
-* [uptrack server start](uptrack_server_start.md)	 - Start the server
+* [uptrack server start](uptrack_server_start.md)	 - Start the uptrack server
 
