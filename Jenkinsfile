@@ -18,7 +18,7 @@ pipeline {
     EXTENDED_IMAGE_TAG = """${sh(
             returnStdout: true,
             script: 'git describe --tags'
-    ).trim}"""
+    ).trim()}"""
 
     BUILD_DATE = """${sh(
             returnStdout: true,
@@ -29,6 +29,7 @@ pipeline {
             returnStdout: true,
             script: 'git rev-parse --short HEAD'
     ).trim()}"""
+
 
   }
   stages {
