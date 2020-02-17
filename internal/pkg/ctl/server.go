@@ -54,6 +54,20 @@ func StartUpTrackServer(config config.Config) error {
 	)
 	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
 
+	info := "Initialized UpChecks:\n"
+
+	for _, upJob := range descriptor.UpJobs {
+		info = info + fmt.Sprintf("Name: '%s', url:'%s' \n", upJob.Name, upJob.URL)
+	}
+	logrus.Info(info)
+
+	info = "Initialized DNSChecks:\n"
+
+	for _, dnsJob := range descriptor.DNSJobs {
+		info = info + fmt.Sprintf("Name: '%s', FQDN:'%s' \n", dnsJob.Name, dnsJob.FQDN)
+	}
+	logrus.Info(info)
+
 	go runJobs(descriptor, registry, config.CheckFrequency())
 
 	// starting server with prometheus endpoint

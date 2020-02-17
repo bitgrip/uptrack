@@ -7,6 +7,7 @@ import (
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/api/dd"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
+	"github.com/sirupsen/logrus"
 )
 
 // datadogRegistry is a wrapper to forward Registry actions
@@ -45,6 +46,9 @@ type metricKeys struct {
 }
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
+	logrus.Info(fmt.Sprintf("Initialize DataDog Registry for endpoint '%s'", config.DDEndpoint()))
+	logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", config.DDInterval()))
+
 	api := dd.NewAPI(config.DDEndpoint(), config.DDApiKey(), config.DDAppKey())
 	client := dd.NewClient(api, config.DDInterval().Seconds())
 	client.Watch(config.DDInterval())
