@@ -52,7 +52,7 @@ pipeline {
         script {
 
 
-          def image = docker.build("${IMAGE_REPOSITORY}/uptrack:${EXTENDED_IMAGE_TAG}", "--squash --pull . --build-arg BUILD_DATE=${BUILD_DATE}  VCS_REF=${VCS_REF}")
+          def image = docker.build("${IMAGE_REPOSITORY}/uptrack:${EXTENDED_IMAGE_TAG}", "--squash --pull --build-arg BUILD_DATE=${BUILD_DATE}  VCS_REF=${VCS_REF} .")
           docker.withRegistry("${IMAGE_PUSH_REGISTRY}", 'bg-system') {
             image.push()
           }
