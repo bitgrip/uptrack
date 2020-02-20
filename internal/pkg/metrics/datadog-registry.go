@@ -95,50 +95,43 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 }
 
 func (r *datadogRegistry) IncCanConnect(job string) {
-	r.Client.Gauge(job, r.keysForChecks[job].CanConnect, 1, r.tagsForChecks[job].CanConnect)
-	r.Client.Gauge(job, r.keysForChecks[job].CannotConnect, 0, r.tagsForChecks[job].CannotConnect)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].CanConnect, 1, r.tagsForChecks[job].CanConnect)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].CannotConnect, 0, r.tagsForChecks[job].CannotConnect)
 
 }
 
 func (r *datadogRegistry) IncCanNotConnect(job string) {
-	r.Client.Gauge(job, r.keysForChecks[job].CanConnect, 0, r.tagsForChecks[job].CanConnect)
-	r.Client.Gauge(job, r.keysForChecks[job].CannotConnect, 1, r.tagsForChecks[job].CannotConnect)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].CanConnect, 0, r.tagsForChecks[job].CanConnect)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].CannotConnect, 1, r.tagsForChecks[job].CannotConnect)
 
 }
 
 func (r *datadogRegistry) SetSSLDaysLeft(job string, daysLeft float64) {
-	r.Client.Gauge(job, r.keysForChecks[job].SSLDaysLeft, daysLeft, r.tagsForChecks[job].SSLDaysLeft)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].SSLDaysLeft, daysLeft, r.tagsForChecks[job].SSLDaysLeft)
 }
 
 func (r *datadogRegistry) SetConnectTime(job string, millis float64) {
-	r.Client.Gauge(job, r.keysForChecks[job].ConnectTime, millis, r.tagsForChecks[job].ConnectTime)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].ConnectTime, millis, r.tagsForChecks[job].ConnectTime)
 
 }
 
 func (r *datadogRegistry) SetTTFB(job string, millis float64) {
-	r.Client.Gauge(job, r.keysForChecks[job].TTFB, millis, r.tagsForChecks[job].TTFB)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].TTFB, millis, r.tagsForChecks[job].TTFB)
 
 }
 
 func (r *datadogRegistry) SetRequestTime(job string, millis float64) {
-	r.Client.Gauge(job, r.keysForChecks[job].RequestTime, millis, r.tagsForChecks[job].RequestTime)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].RequestTime, millis, r.tagsForChecks[job].RequestTime)
 
 }
 
 func (r *datadogRegistry) SetBytesReceived(job string, bytes float64) {
-	r.Client.Gauge(job, r.keysForChecks[job].BytesReceived, bytes, r.tagsForChecks[job].BytesReceived)
+	r.Client.Gauge(job+"_up", r.keysForChecks[job].BytesReceived, bytes, r.tagsForChecks[job].BytesReceived)
 
 }
 
 func (r *datadogRegistry) SetIpsRatio(job string, ratio float64) {
-	r.Client.Gauge(job, r.keysForChecks[job].DNSIpsRatio, ratio, r.tagsForChecks[job].DNSIpsRatio)
-}
-
-func keys(project string, check string) string {
-
-	project = replaceAll(project, " +")
-
-	return fmt.Sprintf("%s.%s.%s", metricsRootName, project, check)
+	r.Client.Gauge(job+"_dns", r.keysForChecks[job].DNSIpsRatio, ratio, r.tagsForChecks[job].DNSIpsRatio)
 }
 
 func dnsTags(descriptor job.Descriptor, dnsJob job.DnsJob, check string) dd.DDTags {
@@ -150,6 +143,7 @@ func dnsTags(descriptor job.Descriptor, dnsJob job.DnsJob, check string) dd.DDTa
 		cons.FQDN:        dnsJob.FQDN,
 	}
 }
+
 func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 
 	return dd.DDTags{
@@ -160,4 +154,10 @@ func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 		cons.UrlString:   upJob.URL,
 		cons.ReqMethod:   string(upJob.Method),
 	}
+}
+func keys(project string, check string) string {
+
+	project = replaceAll(project, " +")
+
+	return fmt.Sprintf("%s.%s.%s", metricsRootName, project, check)
 }
