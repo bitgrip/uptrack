@@ -25,7 +25,7 @@ up_jobs:
 #    host: 'postman-echo.com'
 #    url: https://postman-echo.com/basic-auth
 #    method: GET
-#    headers:
+#    header:
 #      Authorization:
 #      - 'Basic cG9zdG1hbjpwYXNzd29yZA=='
 dns_jobs:

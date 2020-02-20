@@ -9,7 +9,6 @@ import (
 // Descriptor represents a JOB document
 type Descriptor struct {
 	Name              string            `json:"project,omitempty" yaml:"project,omitempty"`
-	BaseURL           string            `json:"base_url,omitempty" yaml:"base_url,omitempty"`
 	UpJobs            map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
 	DNSJobs           map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
 	DatadogEnabled    bool              `json:"datadog_enabled,omitempty" yaml:"datadog_enabled,omitempty"`
@@ -43,7 +42,7 @@ type UpJob struct {
 	URL        string      `json:"url" yaml:"url"`
 	Method     Method      `json:"method,omitempty" yaml:"method,omitempty"`
 	Expected   int         `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
-	Header     http.Header `json:"header,omitempty" yaml:"headers,omitempty"`
+	Header     http.Header `json:"header,omitempty" yaml:"header,omitempty"`
 	PlainBody  string      `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
 	Base64Body string      `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
 	CheckSSL   bool        `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
