@@ -6,7 +6,7 @@ const (
 	JobName     string = "job"
 	CheckName   string = "check"
 	UrlString   string = "url"
-	ReqMethod   string = "request_methos"
+	ReqMethod   string = "request_method"
 	Host               = "host"
 	FQDN        string = "FQDN"
 	ProjectName        = "project"
