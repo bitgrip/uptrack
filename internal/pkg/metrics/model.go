@@ -1,16 +1,26 @@
 package metrics
 
+import "regexp"
+
 // Registry is a datastore to collect metrics
 type Registry interface {
 	// General
-	IncExecution(job string)
-	IncCanConnect(job string, uri string)
-	IncCanNotConnect(job string, uri string)
+	IncCanConnect(job string)
+	IncCanNotConnect(job string)
 	// SSL Check
-	SetSSLDaysLeft(job string, uri string, daysLeft int64)
+	SetSSLDaysLeft(job string, daysLeft float64)
 	// HTTP Check
-	SetConnectTime(job string, uri string, millis int64)
-	SetTTFB(job string, uri string, millis int64)
-	SetRequestTime(job string, uri string, millis int64)
-	SetBytesReceived(job string, uri string, bytes int64)
+	SetConnectTime(job string, millis float64)
+	SetTTFB(job string, millis float64)
+	SetRequestTime(job string, millis float64)
+	SetBytesReceived(job string, bytes float64)
+
+	//DNS lookup check
+	SetIpsRatio(job string, ratio float64)
+}
+
+func replaceAll(str string, pattern string) string {
+	r, _ := regexp.Compile(pattern)
+	str = string(r.ReplaceAll([]byte(str), []byte("_")))
+	return str
 }

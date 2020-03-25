@@ -1,0 +1,39 @@
+project: KarolsChecks
+datadog_enabled: true
+prometheus_enabled: true
+up_jobs:
+  bitgrip_kontakt:
+    description: 'Came for the money, stayed for the story'
+    host: 'bitgrip.de'
+    url: https://www.bitgrip.de/kontakt
+    method: GET
+    expected_code: 301
+#  bitgrip_home:
+#    description: 'Came for the money, stayed for the story'
+#    host: 'bitgrip.de'
+#    url: https://www.bitgrip.de
+#    method: GET
+#    expected_code: 200
+  bitgrip_ksb_ci2:
+    description: 'Came for the money, stayed for the story'
+    host: 'google.de'
+    url: 'https://www.google.de'
+    method: GET
+    expected_code: 200
+#  auth_check:
+#    description: 'XXX'
+#    host: 'postman-echo.com'
+#    url: https://postman-echo.com/basic-auth
+#    method: GET
+#    header:
+#      Authorization:
+#      - 'Basic cG9zdG1hbjpwYXNzd29yZA=='
+dns_jobs:
+  bitgrip_dns:
+    host: 'occ-ci2.ksb.bitgrip.berlin'
+    fqdn: 'oc-ci2.ksb.bitgrip.berlin'
+    ips:
+    - '116.203.116.72'
+    - '159.69.202.97'
+    - '159.69.25.18'
+    - '159.69.33.100'

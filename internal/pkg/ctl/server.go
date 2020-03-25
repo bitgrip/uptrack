@@ -15,11 +15,18 @@
 package ctl
 
 import (
-	"fmt"
-
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/metrics"
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"net/http/httptrace"
+	"strconv"
+	"time"
 )
 
 // StartUpTrackServer is initialising the UpTrack Server
@@ -30,12 +37,149 @@ import (
 // * Start and Listening the UpTrack Server
 func StartUpTrackServer(config config.Config) error {
 	logrus.Info("Start UpTrack server")
-	logrus.Info(fmt.Sprintf("Use default interval %v", config.DefaultInterval()))
-	logrus.Info(fmt.Sprintf("Load configs from %s\n", config.JobConfigDir()))
+	logrus.Info(fmt.Sprintf("Use default interval %v", config.CheckFrequency()))
+	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
+
+	endpoint := config.PrometheusEndpoint()
+	port := strconv.Itoa(config.PrometheusPort())
+	uri := fmt.Sprintf(":" + port + endpoint)
+
+	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
+	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
+		logrus.Warn("No Jobs defined ior not properly parsed from {}", config.JobConfigDir())
+	}
 	registry := metrics.NewCombinedRegistry(
-		metrics.NewPrometheusRegistry(config.PrometheusScrape()),
-		metrics.NewDatadogRegistry(config.DatadogCredentials()),
+		metrics.NewPrometheusRegistry(descriptor),
+		metrics.NewDatadogRegistry(config, descriptor),
 	)
-	logrus.Info(registry)
+	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
+
+	info := "Initialized UpChecks:\n"
+
+	for _, upJob := range descriptor.UpJobs {
+		info = info + fmt.Sprintf("Name: '%s', url:'%s' \n", upJob.Name, upJob.URL)
+	}
+	logrus.Info(info)
+
+	info = "Initialized DNSChecks:\n"
+
+	for _, dnsJob := range descriptor.DNSJobs {
+		info = info + fmt.Sprintf("Name: '%s', FQDN:'%s' \n", dnsJob.Name, dnsJob.FQDN)
+	}
+	logrus.Info(info)
+
+	go runJobs(descriptor, registry, config.CheckFrequency())
+
+	// starting server with prometheus endpoint
+	http.Handle(endpoint, promhttp.Handler())
+
+	err := http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	return nil
+}
+
+func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time.Duration) {
+	for {
+		//having one upJob iteration per interval
+		startJobs := time.Now()
+		//count iterations
+		for _, upJob := range descriptor.UpJobs {
+			doUpChecks(registry, upJob)
+		}
+
+		for _, dnsJob := range descriptor.DNSJobs {
+			doDnsChecks(registry, dnsJob)
+		}
+		duration := startJobs.Add(interval).Sub(time.Now())
+
+		if duration.Milliseconds() < 0 {
+			duration = 0
+		}
+
+		time.Sleep(duration)
+
+	}
+
+}
+
+func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
+
+	jobName := dnsJob.Name
+	actIps, err := net.LookupIP(dnsJob.FQDN)
+
+	if err != nil {
+		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
+
+		return
+	}
+
+	actIpsS := make([]string, 0)
+	for _, v := range actIps {
+		actIpsS = append(actIpsS, v.String())
+	}
+	expIps := dnsJob.IPs
+
+	intersecIps := GetIntersecting(expIps, actIpsS)
+	if len(expIps) == 0 {
+		registry.SetIpsRatio(jobName, 0)
+	}
+	registry.SetIpsRatio(jobName, float64(len(intersecIps)/len(expIps)))
+}
+
+func GetIntersecting(expIps []string, actIps []string) []string {
+	intersecIps := make([]string, 0)
+	for _, expIp := range expIps {
+		for _, actIp := range actIps {
+			if actIp == expIp {
+				intersecIps = append(intersecIps, expIp)
+			}
+		}
+
+	}
+	return intersecIps
+}
+
+func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
+	jobName := upJob.Name
+	url := upJob.URL
+	//prepare request
+	req, _ := http.NewRequest(string(upJob.Method), url, upJob.Body())
+	clientTrace := trace(registry, jobName)
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
+	//Add headers
+	for k, v := range upJob.Header {
+		req.Header.Add(k, v[0])
+	}
+
+	t := transport()
+	//measure request time
+	startReq := time.Now()
+	resp, err := t.RoundTrip(req)
+	if err != nil {
+		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
+		registry.IncCanNotConnect(jobName)
+		return
+	}
+	endReq := time.Since(startReq)
+	registry.SetRequestTime(jobName, float64(endReq.Milliseconds()))
+
+	//time until expiry of ssl certs
+	if upJob.CheckSSL {
+		hours := time.Until(resp.TLS.PeerCertificates[0].NotAfter).Hours()
+		registry.SetSSLDaysLeft(jobName, hours/24)
+	}
+
+	if resp.StatusCode == upJob.Expected {
+		//count successful connections
+		registry.IncCanConnect(jobName)
+
+		//measure received bytes, body+headers
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
+
+	} else {
+		registry.IncCanNotConnect(jobName)
+	}
 }

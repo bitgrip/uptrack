@@ -15,5 +15,5 @@
 // Package server provides sub command __server__ to start a UpTrack server
 package server
 
-var serverLongDescription = `Interaction to the UpTrack server`
-var startLongDescription = `Start the UpTrack server`
+var serverLongDescription = `Configure and interact with the uptrack server`
+var startLongDescription = `Start the uptrack server`

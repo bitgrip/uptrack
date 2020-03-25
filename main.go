@@ -15,7 +15,7 @@
 package main
 
 import (
-	"bitbucket.org/bitgrip/uptrack/cmd" 
+	"bitbucket.org/bitgrip/uptrack/cmd"
 )
 
 func main() {

@@ -12,50 +12,50 @@ func NewCombinedRegistry(registries ...Registry) Registry {
 	}
 }
 
-func (r *combinedRegistry) IncExecution(job string) {
+func (r *combinedRegistry) IncCanConnect(job string) {
 	for _, registry := range r.registries {
-		registry.IncExecution(job)
+		registry.IncCanConnect(job)
 	}
 }
 
-func (r *combinedRegistry) IncCanConnect(job string, uri string) {
+func (r *combinedRegistry) IncCanNotConnect(job string) {
 	for _, registry := range r.registries {
-		registry.IncCanConnect(job, uri)
+		registry.IncCanNotConnect(job)
 	}
 }
 
-func (r *combinedRegistry) IncCanNotConnect(job string, uri string) {
+func (r *combinedRegistry) SetSSLDaysLeft(job string, daysLeft float64) {
 	for _, registry := range r.registries {
-		registry.IncCanNotConnect(job, uri)
+		registry.SetSSLDaysLeft(job, daysLeft)
 	}
 }
 
-func (r *combinedRegistry) SetSSLDaysLeft(job string, uri string, daysLeft int64) {
+func (r *combinedRegistry) SetConnectTime(job string, millis float64) {
 	for _, registry := range r.registries {
-		registry.SetSSLDaysLeft(job, uri, daysLeft)
+		registry.SetConnectTime(job, millis)
 	}
 }
 
-func (r *combinedRegistry) SetConnectTime(job string, uri string, millis int64) {
+func (r *combinedRegistry) SetTTFB(job string, millis float64) {
 	for _, registry := range r.registries {
-		registry.SetConnectTime(job, uri, millis)
+		registry.SetTTFB(job, millis)
 	}
 }
 
-func (r *combinedRegistry) SetTTFB(job string, uri string, millis int64) {
+func (r *combinedRegistry) SetRequestTime(job string, millis float64) {
 	for _, registry := range r.registries {
-		registry.SetTTFB(job, uri, millis)
+		registry.SetRequestTime(job, millis)
 	}
 }
 
-func (r *combinedRegistry) SetRequestTime(job string, uri string, millis int64) {
+func (r *combinedRegistry) SetBytesReceived(job string, bytes float64) {
 	for _, registry := range r.registries {
-		registry.SetRequestTime(job, uri, millis)
+		registry.SetBytesReceived(job, bytes)
 	}
 }
 
-func (r *combinedRegistry) SetBytesReceived(job string, uri string, bytes int64) {
+func (r *combinedRegistry) SetIpsRatio(job string, ratio float64) {
 	for _, registry := range r.registries {
-		registry.SetBytesReceived(job, uri, bytes)
+		registry.SetIpsRatio(job, ratio)
 	}
 }

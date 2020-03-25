@@ -16,25 +16,49 @@ package cmd
 
 import (
 	"github.com/spf13/viper"
+	"time"
 )
 
-var rancherConfig = config{}
+var uptrackConfig = config{}
 
 type config struct {
 }
 
 func (config) JobConfigDir() string {
-	return viper.GetString("uptrack.jobs_dir")
+	return viper.GetString("uptrack.jobs_config")
 }
 
-func (config) DefaultInterval() int {
-	return viper.GetInt("uptrack.default_interval")
+func (config) CheckFrequency() time.Duration {
+	return time.Duration(viper.GetInt("uptrack.check_frequency")) * time.Second
 }
 
 func (config) DatadogCredentials() string {
 	return viper.GetString("uptrack.datadog.credentials")
 }
 
-func (config) PrometheusScrape() string {
-	return viper.GetString("uptrack.prometheus.scrape")
+func (config) PrometheusEndpoint() string {
+	return viper.GetString("uptrack.prometheus.endpoint")
+}
+
+func (config) PrometheusPort() int {
+	return viper.GetInt("uptrack.prometheus.port")
+
+}
+func (config) DDEndpoint() string {
+	return viper.GetString("uptrack.datadog.endpoint")
+
+}
+
+func (config) DDApiKey() string {
+	return viper.GetString("uptrack.datadog.apiKey")
+
+}
+func (config) DDAppKey() string {
+	return viper.GetString("uptrack.datadog.appKey")
+
+}
+
+func (config) DDInterval() time.Duration {
+	return time.Duration(viper.GetInt("uptrack.datadog.interval")) * time.Second
+
 }
