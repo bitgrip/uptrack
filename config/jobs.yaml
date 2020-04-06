@@ -1,37 +1,39 @@
-project: KarolsChecks
-up_jobs:
-  bitgrip_kontakt:
-    description: 'Came for the money, stayed for the story'
-    host: 'bitgrip.de'
-    url: https://www.bitgrip.de/kontakt
-    method: GET
-    expected_code: 301
-#  bitgrip_home:
-#    description: 'Came for the money, stayed for the story'
-#    host: 'bitgrip.de'
-#    url: https://www.bitgrip.de
-#    method: GET
-#    expected_code: 200
-  bitgrip_ksb_ci2:
-    description: 'Came for the money, stayed for the story'
-    host: 'google.de'
-    url: 'https://www.google.de'
-    method: GET
-    expected_code: 200
-#  auth_check:
-#    description: 'XXX'
-#    host: 'postman-echo.com'
-#    url: https://postman-echo.com/basic-auth
-#    method: GET
-#    header:
+####################################
+# Documented instance parameters
+###################################
+
+#project: Big_Company                                ### Project Name, i.e. customer name
+#up_jobs:                                            ### A list of UpJobs, tracking the status for given url
+#  myUpJob:                                          ### Name of this job
+#    host: 'google.com'                              ### Host of the url to job
+#    url: https://www.google.de                      ### The URL to check
+#    method: POST                                    ### The method used for the check (default: GET)
+#    header:                                         ### Headers for the request as map (string -> []string)
 #      Authorization:
-#      - 'Basic cG9zdG1hbjpwYXNzd29yZA=='
-dns_jobs:
-  bitgrip_dns:
-    host: 'occ-ci2.ksb.bitgrip.berlin'
-    fqdn: 'oc-ci2.ksb.bitgrip.berlin'
-    ips:
-    - '116.203.116.72'
-    - '159.69.202.97'
-    - '159.69.25.18'
-    - '159.69.33.100'
+#        - 'Basic abc=='
+#      Content-Type:
+#        - 'application/json'
+#    plain_body: '{"code":"etanorm","count":15}'    ### The request body
+#    base64_body: '{"code":"etanorm","count":15}'   ### Base64 encoded request body
+#    expected_code: 301                             ### Expected response code of the check (default: 200)
+#    content_match: '.*"totalResults" : 9'          ### Regular Expression to be found in response body (omitted when empty)
+#    reverse_content_match: true                    ### Reverse behaviour of content_match logic (default: false)
+#    check_ssl: true                                ### Enables Validation of SSL certificates (default: true)
+#    tags:                                          ### Add custom tags here, add a map (string ->String)
+#      cloud_provider: azure
+#      kube_cluster_name: ksb-az-stage
+#      stage: stage
+#
+#dns_jobs:                                          ### A list of DNSJobs, tracking the status for given url
+#  myDnsJob:                                        ### Name of this job
+#    host: 'google.com'                             ### Host to perform the DNSJob on
+#    fqdn: 'www.google.com'                         ### Fully qualified domain name
+#    ips:                                           ### a list of expected ips
+#      - '116.203.116.72'
+#      - '159.69.202.97'
+#      - '159.69.25.18'
+#      - '159.69.33.100'
+#    tags:                                          ### Add custom tags here, add a map (string -String)
+#      cloud_provider: azure
+#      kube_cluster_name: ksb-az-stage
+#      stage: stage

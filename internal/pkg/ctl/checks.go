@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptrace"
+	"regexp"
 	"time"
 
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
@@ -43,17 +44,34 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 		registry.SetSSLDaysLeft(jobName, hours/24)
 	}
 
-	if resp.StatusCode == upJob.Expected {
+	up := resp.StatusCode == upJob.Expected
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logrus.Fatal(err)
+	} else {
+		registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
+	}
+	if upJob.ContentMatch != "" {
+		up = up && matchResponse(upJob.ContentMatch, bodyBytes, upJob.ReverseContentMatch)
+	}
+	if up {
+
 		//count successful connections
 		registry.IncCanConnect(jobName)
-
-		//measure received bytes, body+headers
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
 
 	} else {
 		registry.IncCanNotConnect(jobName)
 	}
+
+}
+
+func matchResponse(pattern string, bytes []byte, reverseMatch bool) bool {
+	regex, _ := regexp.Compile(pattern)
+	doesMatch := regex.Match(bytes)
+	if reverseMatch {
+		return !doesMatch
+	}
+	return doesMatch
 }
 
 func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {

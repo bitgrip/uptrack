@@ -1,7 +1,7 @@
 log_json: false
 verbosity: 1
 uptrack:
-  check_frequency: 33
+  default_interval: 10
   jobs_config: './config/jobs.yaml'
   datadog:
     enabled: true

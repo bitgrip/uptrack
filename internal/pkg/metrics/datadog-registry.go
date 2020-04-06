@@ -138,13 +138,17 @@ func (r *datadogRegistry) SetIpsRatio(job string, ratio float64) {
 }
 
 func dnsTags(descriptor job.Descriptor, dnsJob job.DnsJob, check string) dd.DDTags {
-	return dd.DDTags{
+	tags := dd.DDTags{
 		cons.ProjectName: descriptor.Name,
 		cons.JobName:     dnsJob.Name,
 		cons.Host:        dnsJob.Host,
 		cons.CheckName:   check,
 		cons.FQDN:        dnsJob.FQDN,
 	}
+	for k, v := range dnsJob.CustomTags {
+		tags[k] = v
+	}
+	return tags
 }
 
 func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
@@ -161,7 +165,6 @@ func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 	for k, v := range upJob.CustomTags {
 		tags[k] = v
 	}
-
 	return tags
 }
 func keys(project string, check string) string {
