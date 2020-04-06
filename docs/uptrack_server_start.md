@@ -22,10 +22,12 @@ uptrack server start [flags]
       --check-frequency int          Default interval to execute job (default 10)
       --datadog-apiKey string        Datadog API-Key
       --datadog-appKey string        Datadog APP-key
+      --datadog-enabled              Enable sending metrics to Datadog Endpoint (default true)
       --datadog-endpoint string      Datadog Endpoint (default "https://api.datadoghq.com/api/v1/series")
       --datadog-interval int         Interval for sending metrics to Datadog (default 5)
       --jobs-config string           Descriptor file defining all checks (default "./config/jobs.yaml")
       --log-json                     if to log using json format
+      --prometheus-enabled           Enable Prometheus Endpoint (default true)
       --prometheus-endpoint string   Prometheus Endpoint (default "/metrics")
       --prometheus-port string       Port exposed by prometheus (default "9001")
       --uptrack-config string        Configuration file for uptrack application  (default "config/uptrack.yaml")

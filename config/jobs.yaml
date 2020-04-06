@@ -1,6 +1,4 @@
 project: KarolsChecks
-datadog_enabled: true
-prometheus_enabled: true
 up_jobs:
   bitgrip_kontakt:
     description: 'Came for the money, stayed for the story'

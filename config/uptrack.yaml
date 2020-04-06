@@ -1,12 +1,14 @@
 log_json: false
 verbosity: 1
 uptrack:
-  default_interval: 10
+  check_frequency: 33
   jobs_config: './config/jobs.yaml'
   datadog:
-    appKey: 'app'
-    apiKey: 'api'
-    interval: 5
+    enabled: true
+    appKey: '?'
+    apiKey: '?'
+    interval: 19
   prometheus:
+    enabled: true
     port: 2222
     endpoint: /metrics

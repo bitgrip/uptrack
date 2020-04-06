@@ -8,18 +8,13 @@ import (
 
 // Descriptor represents a JOB document
 type Descriptor struct {
-	Name              string            `json:"project,omitempty" yaml:"project,omitempty"`
-	UpJobs            map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
-	DNSJobs           map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
-	DatadogEnabled    bool              `json:"datadog_enabled,omitempty" yaml:"datadog_enabled,omitempty"`
-	PrometheusEnabled bool              `json:"prometheus_enabled,omitempty" yaml:"prometheus_enabled,omitempty"`
+	Name    string            `json:"project,omitempty" yaml:"project,omitempty"`
+	UpJobs  map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
+	DNSJobs map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
 }
 
 func DescriptorFromFile(path string) (Descriptor, error) {
-	d := Descriptor{
-		DatadogEnabled:    true,
-		PrometheusEnabled: true,
-	}
+	d := Descriptor{}
 	data, _ := ioutil.ReadFile(path)
 	err := yaml.Unmarshal(data, &d)
 

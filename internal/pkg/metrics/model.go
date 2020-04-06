@@ -1,9 +1,12 @@
 package metrics
 
-import "regexp"
+import (
+	"regexp"
+)
 
 // Registry is a datastore to collect metrics
 type Registry interface {
+	Enabled() bool
 	// General
 	IncCanConnect(job string)
 	IncCanNotConnect(job string)

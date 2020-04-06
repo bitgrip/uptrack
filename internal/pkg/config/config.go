@@ -20,9 +20,11 @@ import "time"
 type Config interface {
 	JobConfigDir() string
 	CheckFrequency() time.Duration
+	PrometheusEnabled() bool
 	PrometheusEndpoint() string
 	PrometheusPort() int
-	DatadogCredentials() string
+	DDEnabled() bool
+	DDCredentials() string
 	DDEndpoint() string
 	DDApiKey() string
 	DDAppKey() string

@@ -6,6 +6,14 @@ type combinedRegistry struct {
 	registries []Registry
 }
 
+func (r *combinedRegistry) Enabled() bool {
+	var enabled = false
+	for _, registry := range r.registries {
+		enabled = enabled || registry.Enabled()
+	}
+	return enabled
+}
+
 func NewCombinedRegistry(registries ...Registry) Registry {
 	return &combinedRegistry{
 		registries: registries,

@@ -7,16 +7,20 @@ import (
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/api/dd"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
-	"github.com/sirupsen/logrus"
 )
 
 // datadogRegistry is a wrapper to forward Registry actions
 // to a collection of Registries
 type datadogRegistry struct {
+	enabled              bool
 	Client               *dd.Client
 	ExecutionCounterTags dd.DDTags
 	tagsForChecks        map[string]ddTags
 	keysForChecks        map[string]metricKeys
+}
+
+func (r *datadogRegistry) Enabled() bool {
+	return r.enabled
 }
 
 const metricsRootName = "uptrack"
@@ -46,9 +50,6 @@ type metricKeys struct {
 }
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
-	logrus.Info(fmt.Sprintf("Initialize DataDog Registry for endpoint '%s'", config.DDEndpoint()))
-	logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", int(config.DDInterval().Seconds())))
-
 	api := dd.NewAPI(config.DDEndpoint(), config.DDApiKey(), config.DDAppKey())
 	client := dd.NewClient(api, config.DDInterval().Seconds())
 	client.Watch(config.DDInterval())
@@ -88,10 +89,12 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 		}
 	}
 
-	d := &datadogRegistry{Client: client,
+	return &datadogRegistry{
+		Client:        client,
+		enabled:       config.DDEnabled(),
 		keysForChecks: localKeysForChecks,
-		tagsForChecks: localTagsForChecks}
-	return d
+		tagsForChecks: localTagsForChecks,
+	}
 }
 
 func (r *datadogRegistry) IncCanConnect(job string) {

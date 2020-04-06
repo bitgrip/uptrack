@@ -37,23 +37,40 @@ import (
 // * Start and Listening the UpTrack Server
 func StartUpTrackServer(config config.Config) error {
 	logrus.Info("Start UpTrack server")
-	logrus.Info(fmt.Sprintf("Use default interval %v", config.CheckFrequency()))
+
+	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
+	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
+		logrus.Warn("No Jobs defined or not properly parsed from", config.JobConfigDir())
+		return nil
+	}
+	registry := metrics.NewCombinedRegistry(
+		metrics.NewPrometheusRegistry(config, descriptor),
+		metrics.NewDatadogRegistry(config, descriptor),
+	)
+	if !registry.Enabled() {
+		logrus.Info(fmt.Sprintf("No enabled registries found. \n Exiting."))
+		return nil
+	}
+
 	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
 
 	endpoint := config.PrometheusEndpoint()
 	port := strconv.Itoa(config.PrometheusPort())
-	uri := fmt.Sprintf(":" + port + endpoint)
+	promUri := fmt.Sprintf(":" + port + endpoint)
 
-	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
-	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
-		logrus.Warn("No Jobs defined ior not properly parsed from {}", config.JobConfigDir())
+	if config.PrometheusEnabled() {
+		logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", promUri))
+	} else {
+		logrus.Info(fmt.Sprintf("Prometheus Endpoint is disabled"))
 	}
-	registry := metrics.NewCombinedRegistry(
-		metrics.NewPrometheusRegistry(descriptor),
-		metrics.NewDatadogRegistry(config, descriptor),
-	)
-	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
+	if config.DDEnabled() {
+		logrus.Info(fmt.Sprintf("Initialize DataDog Registry for endpoint '%s'", config.DDEndpoint()))
+		logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", int(config.DDInterval().Seconds())))
+	} else {
+		logrus.Info(fmt.Sprintf("Sending Metrics to DataDog is disabled"))
+	}
 
+	logrus.Info(fmt.Sprintf("Use check frequency %v", config.CheckFrequency()))
 	info := "Initialized UpChecks:\n"
 
 	for _, upJob := range descriptor.UpJobs {
