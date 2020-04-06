@@ -1,9 +1,10 @@
 package job
 
 import (
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Descriptor represents a JOB document
@@ -33,14 +34,15 @@ func DescriptorFromFile(path string) (Descriptor, error) {
 // UpJob is a check if a HTTP endpoint is up and able to serve required method
 type UpJob struct {
 	Name       string
-	Host       string      `json:"host" yaml:"host"`
-	URL        string      `json:"url" yaml:"url"`
-	Method     Method      `json:"method,omitempty" yaml:"method,omitempty"`
-	Expected   int         `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
-	Header     http.Header `json:"header,omitempty" yaml:"header,omitempty"`
-	PlainBody  string      `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
-	Base64Body string      `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
-	CheckSSL   bool        `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
+	Host       string            `json:"host" yaml:"host"`
+	URL        string            `json:"url" yaml:"url"`
+	Method     Method            `json:"method,omitempty" yaml:"method,omitempty"`
+	Expected   int               `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
+	Header     http.Header       `json:"header,omitempty" yaml:"header,omitempty"`
+	PlainBody  string            `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
+	Base64Body string            `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
+	CheckSSL   bool              `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
+	CustomTags map[string]string `json:"tags,omitempty" yaml:"tags,omitempty"`
 }
 
 type UpJobs map[string]UpJob

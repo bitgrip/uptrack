@@ -149,7 +149,7 @@ func dnsTags(descriptor job.Descriptor, dnsJob job.DnsJob, check string) dd.DDTa
 
 func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 
-	return dd.DDTags{
+	tags := dd.DDTags{
 		cons.ProjectName: descriptor.Name,
 		cons.JobName:     upJob.Name,
 		cons.Host:        upJob.Host,
@@ -157,6 +157,12 @@ func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 		cons.UrlString:   upJob.URL,
 		cons.ReqMethod:   string(upJob.Method),
 	}
+
+	for k, v := range upJob.CustomTags {
+		tags[k] = v
+	}
+
+	return tags
 }
 func keys(project string, check string) string {
 
