@@ -47,7 +47,7 @@ type metricKeys struct {
 
 func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registry {
 	logrus.Info(fmt.Sprintf("Initialize DataDog Registry for endpoint '%s'", config.DDEndpoint()))
-	logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", config.DDInterval()))
+	logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", int(config.DDInterval().Seconds())))
 
 	api := dd.NewAPI(config.DDEndpoint(), config.DDApiKey(), config.DDAppKey())
 	client := dd.NewClient(api, config.DDInterval().Seconds())
