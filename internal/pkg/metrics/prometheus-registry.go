@@ -4,6 +4,7 @@ import (
 	"math"
 
 	cons "bitbucket.org/bitgrip/uptrack/internal/pkg"
+	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -12,9 +13,14 @@ import (
 // prometheusRegistry is a wrapper to forward Registry actions
 // to a collection of Registries
 type prometheusRegistry struct {
+	enabled             bool
 	Execution           prometheus.Counter //Execution Counter
 	metricsForUpChecks  map[string]metrics
 	metricsForDnsChecks map[string]metrics
+}
+
+func (r *prometheusRegistry) Enabled() bool {
+	return r.enabled
 }
 
 type metrics struct {
@@ -28,7 +34,7 @@ type metrics struct {
 	DNSIpsRatio   prometheus.Gauge
 }
 
-func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
+func NewPrometheusRegistry(config config.Config, descriptor job.Descriptor) Registry {
 	projectName := replaceAll(descriptor.Name, " +")
 	exec := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: cons.PromNamespace,
@@ -58,63 +64,80 @@ func NewPrometheusRegistry(descriptor job.Descriptor) Registry {
 		}
 	}
 
-	return &prometheusRegistry{Execution: exec, metricsForUpChecks: localMetricsForChecks, metricsForDnsChecks: localMetricsForDns}
+	return &prometheusRegistry{
+		Execution:           exec,
+		enabled:             config.PrometheusEnabled(),
+		metricsForUpChecks:  localMetricsForChecks,
+		metricsForDnsChecks: localMetricsForDns,
+	}
 }
 
 func checkCounter(project string, check string, upJob job.UpJob) prometheus.Counter {
+	labels := prometheus.Labels{
+		cons.ProjectName: project,
+		cons.JobName:     upJob.Name,
+		cons.Host:        upJob.Host,
+		cons.CheckName:   check,
+		cons.UrlString:   upJob.URL,
+	}
+	for k, v := range upJob.CustomTags {
+		labels[k] = v
+	}
 	return promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: cons.PromNamespace,
-		Name:      cons.PromNameUpcheckCounter,
-		ConstLabels: prometheus.Labels{
-			cons.ProjectName: project,
-			cons.JobName:     upJob.Name,
-			cons.Host:        upJob.Host,
-			cons.CheckName:   check,
-			cons.UrlString:   upJob.URL,
-		},
+		Namespace:   cons.PromNamespace,
+		Name:        cons.PromNameUpcheckCounter,
+		ConstLabels: labels,
 	})
 }
 
-func dnsCounter(project string, check string, dnsJob job.DnsJob) prometheus.Counter {
-	return promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: cons.PromNamespace,
-		Name:      cons.PromNameDnsCheckCounter,
-		ConstLabels: prometheus.Labels{
-			cons.ProjectName: project,
-			cons.JobName:     dnsJob.Name,
-			cons.Host:        dnsJob.Host,
-			cons.CheckName:   check,
-			cons.FQDN:        dnsJob.FQDN,
-		},
-	})
-}
+//func dnsCounter(project string, check string, dnsJob job.DnsJob) prometheus.Counter {
+//	return promauto.NewCounter(prometheus.CounterOpts{
+//		Namespace: cons.PromNamespace,
+//		Name:      cons.PromNameDnsCheckCounter,
+//		ConstLabels: prometheus.Labels{
+//			cons.ProjectName: project,
+//			cons.JobName:     dnsJob.Name,
+//			cons.Host:        dnsJob.Host,
+//			cons.CheckName:   check,
+//			cons.FQDN:        dnsJob.FQDN,
+//		},
+//	})
+//}
 
 func upGauge(project string, check string, upJob job.UpJob) prometheus.Gauge {
+	labels := prometheus.Labels{
+		cons.ProjectName: project,
+		cons.JobName:     upJob.Name,
+		cons.Host:        upJob.Host,
+		cons.CheckName:   check,
+		cons.UrlString:   upJob.URL,
+		cons.ReqMethod:   string(upJob.Method),
+	}
+	for k, v := range upJob.CustomTags {
+		labels[k] = v
+	}
 	return promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: cons.PromNamespace,
-		Name:      cons.PromNameUpCheckGauge,
-		ConstLabels: prometheus.Labels{
-			cons.ProjectName: project,
-			cons.JobName:     upJob.Name,
-			cons.Host:        upJob.Host,
-			cons.CheckName:   check,
-			cons.UrlString:   upJob.URL,
-			cons.ReqMethod:   string(upJob.Method),
-		},
+		Namespace:   cons.PromNamespace,
+		Name:        cons.PromNameUpCheckGauge,
+		ConstLabels: labels,
 	})
 }
 
 func dnsGauge(project string, check string, dnsJob job.DnsJob) prometheus.Gauge {
+	labels := prometheus.Labels{
+		cons.ProjectName: project,
+		cons.JobName:     dnsJob.Name,
+		cons.Host:        dnsJob.Host,
+		cons.CheckName:   check,
+		cons.FQDN:        dnsJob.FQDN,
+	}
+	for k, v := range dnsJob.CustomTags {
+		labels[k] = v
+	}
 	return promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: cons.PromNamespace,
-		Name:      cons.PromNameDnsCheckGauge,
-		ConstLabels: prometheus.Labels{
-			cons.ProjectName: project,
-			cons.JobName:     dnsJob.Name,
-			cons.Host:        dnsJob.Host,
-			cons.CheckName:   check,
-			cons.FQDN:        dnsJob.FQDN,
-		},
+		Namespace:   cons.PromNamespace,
+		Name:        cons.PromNameDnsCheckGauge,
+		ConstLabels: labels,
 	})
 }
 

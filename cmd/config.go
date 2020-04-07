@@ -32,10 +32,10 @@ func (config) CheckFrequency() time.Duration {
 	return time.Duration(viper.GetInt("uptrack.check_frequency")) * time.Second
 }
 
-func (config) DatadogCredentials() string {
-	return viper.GetString("uptrack.datadog.credentials")
-}
+func (config) PrometheusEnabled() bool {
+	return viper.GetBool("uptrack.prometheus.enabled")
 
+}
 func (config) PrometheusEndpoint() string {
 	return viper.GetString("uptrack.prometheus.endpoint")
 }
@@ -44,6 +44,16 @@ func (config) PrometheusPort() int {
 	return viper.GetInt("uptrack.prometheus.port")
 
 }
+
+func (config) DDEnabled() bool {
+	return viper.GetBool("uptrack.datadog.enabled")
+
+}
+
+func (config) DDCredentials() string {
+	return viper.GetString("uptrack.datadog.credentials")
+}
+
 func (config) DDEndpoint() string {
 	return viper.GetString("uptrack.datadog.endpoint")
 

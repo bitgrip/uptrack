@@ -15,18 +15,16 @@
 package ctl
 
 import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/config"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/metrics"
-	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"net/http/httptrace"
-	"strconv"
-	"time"
 )
 
 // StartUpTrackServer is initialising the UpTrack Server
@@ -37,23 +35,40 @@ import (
 // * Start and Listening the UpTrack Server
 func StartUpTrackServer(config config.Config) error {
 	logrus.Info("Start UpTrack server")
-	logrus.Info(fmt.Sprintf("Use default interval %v", config.CheckFrequency()))
+
+	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
+	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
+		logrus.Warn("No Jobs defined or not properly parsed from", config.JobConfigDir())
+		return nil
+	}
+	registry := metrics.NewCombinedRegistry(
+		metrics.NewPrometheusRegistry(config, descriptor),
+		metrics.NewDatadogRegistry(config, descriptor),
+	)
+	if !registry.Enabled() {
+		logrus.Info(fmt.Sprintf("No enabled registries found. \n Exiting."))
+		return nil
+	}
+
 	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
 
 	endpoint := config.PrometheusEndpoint()
 	port := strconv.Itoa(config.PrometheusPort())
-	uri := fmt.Sprintf(":" + port + endpoint)
+	promUri := fmt.Sprintf(":" + port + endpoint)
 
-	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
-	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
-		logrus.Warn("No Jobs defined ior not properly parsed from {}", config.JobConfigDir())
+	if config.PrometheusEnabled() {
+		logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", promUri))
+	} else {
+		logrus.Info(fmt.Sprintf("Prometheus Endpoint is disabled"))
 	}
-	registry := metrics.NewCombinedRegistry(
-		metrics.NewPrometheusRegistry(descriptor),
-		metrics.NewDatadogRegistry(config, descriptor),
-	)
-	logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", uri))
+	if config.DDEnabled() {
+		logrus.Info(fmt.Sprintf("Initialize DataDog Registry for endpoint '%s'", config.DDEndpoint()))
+		logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", int(config.DDInterval().Seconds())))
+	} else {
+		logrus.Info(fmt.Sprintf("Sending Metrics to DataDog is disabled"))
+	}
 
+	logrus.Info(fmt.Sprintf("Use check frequency %v", config.CheckFrequency()))
 	info := "Initialized UpChecks:\n"
 
 	for _, upJob := range descriptor.UpJobs {
@@ -102,84 +117,4 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 
 	}
 
-}
-
-func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
-
-	jobName := dnsJob.Name
-	actIps, err := net.LookupIP(dnsJob.FQDN)
-
-	if err != nil {
-		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
-
-		return
-	}
-
-	actIpsS := make([]string, 0)
-	for _, v := range actIps {
-		actIpsS = append(actIpsS, v.String())
-	}
-	expIps := dnsJob.IPs
-
-	intersecIps := GetIntersecting(expIps, actIpsS)
-	if len(expIps) == 0 {
-		registry.SetIpsRatio(jobName, 0)
-	}
-	registry.SetIpsRatio(jobName, float64(len(intersecIps)/len(expIps)))
-}
-
-func GetIntersecting(expIps []string, actIps []string) []string {
-	intersecIps := make([]string, 0)
-	for _, expIp := range expIps {
-		for _, actIp := range actIps {
-			if actIp == expIp {
-				intersecIps = append(intersecIps, expIp)
-			}
-		}
-
-	}
-	return intersecIps
-}
-
-func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
-	jobName := upJob.Name
-	url := upJob.URL
-	//prepare request
-	req, _ := http.NewRequest(string(upJob.Method), url, upJob.Body())
-	clientTrace := trace(registry, jobName)
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
-	//Add headers
-	for k, v := range upJob.Header {
-		req.Header.Add(k, v[0])
-	}
-
-	t := transport()
-	//measure request time
-	startReq := time.Now()
-	resp, err := t.RoundTrip(req)
-	if err != nil {
-		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
-		registry.IncCanNotConnect(jobName)
-		return
-	}
-	endReq := time.Since(startReq)
-	registry.SetRequestTime(jobName, float64(endReq.Milliseconds()))
-
-	//time until expiry of ssl certs
-	if upJob.CheckSSL {
-		hours := time.Until(resp.TLS.PeerCertificates[0].NotAfter).Hours()
-		registry.SetSSLDaysLeft(jobName, hours/24)
-	}
-
-	if resp.StatusCode == upJob.Expected {
-		//count successful connections
-		registry.IncCanConnect(jobName)
-
-		//measure received bytes, body+headers
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		registry.SetBytesReceived(jobName, float64(len(bodyBytes)+len(resp.Header)))
-
-	} else {
-		registry.IncCanNotConnect(jobName)
-	}
 }

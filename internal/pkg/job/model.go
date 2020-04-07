@@ -1,25 +1,21 @@
 package job
 
 import (
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Descriptor represents a JOB document
 type Descriptor struct {
-	Name              string            `json:"project,omitempty" yaml:"project,omitempty"`
-	UpJobs            map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
-	DNSJobs           map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
-	DatadogEnabled    bool              `json:"datadog_enabled,omitempty" yaml:"datadog_enabled,omitempty"`
-	PrometheusEnabled bool              `json:"prometheus_enabled,omitempty" yaml:"prometheus_enabled,omitempty"`
+	Name    string            `json:"project,omitempty" yaml:"project,omitempty"`
+	UpJobs  map[string]UpJob  `json:"up_jobs,omitempty" yaml:"up_jobs,omitempty"`
+	DNSJobs map[string]DnsJob `json:"dns_jobs,omitempty" yaml:"dns_jobs,omitempty"`
 }
 
 func DescriptorFromFile(path string) (Descriptor, error) {
-	d := Descriptor{
-		DatadogEnabled:    true,
-		PrometheusEnabled: true,
-	}
+	d := Descriptor{}
 	data, _ := ioutil.ReadFile(path)
 	err := yaml.Unmarshal(data, &d)
 
@@ -37,15 +33,18 @@ func DescriptorFromFile(path string) (Descriptor, error) {
 
 // UpJob is a check if a HTTP endpoint is up and able to serve required method
 type UpJob struct {
-	Name       string
-	Host       string      `json:"host" yaml:"host"`
-	URL        string      `json:"url" yaml:"url"`
-	Method     Method      `json:"method,omitempty" yaml:"method,omitempty"`
-	Expected   int         `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
-	Header     http.Header `json:"header,omitempty" yaml:"header,omitempty"`
-	PlainBody  string      `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
-	Base64Body string      `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
-	CheckSSL   bool        `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
+	Name                string
+	Host                string            `json:"host" yaml:"host"`
+	URL                 string            `json:"url" yaml:"url"`
+	Method              Method            `json:"method,omitempty" yaml:"method,omitempty"`
+	Expected            int               `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
+	Header              http.Header       `json:"header,omitempty" yaml:"header,omitempty"`
+	PlainBody           string            `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
+	Base64Body          string            `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
+	CheckSSL            bool              `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`
+	CustomTags          map[string]string `json:"tags,omitempty" yaml:"tags,omitempty"`
+	ContentMatch        string            `json:"content_match,omitempty" yaml:"content_match,omitempty"`
+	ReverseContentMatch bool              `json:"reverse_content_match,omitempty" yaml:"reverse_content_match,omitempty"`
 }
 
 type UpJobs map[string]UpJob
@@ -55,9 +54,11 @@ type tmpUpJob UpJob
 
 func (j *UpJob) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	tmp := &tmpUpJob{
-		Method:   GET,
-		Expected: 200,
-		CheckSSL: true}
+		Method:              GET,
+		Expected:            200,
+		ContentMatch:        "",
+		ReverseContentMatch: false,
+		CheckSSL:            true}
 	unmarshal(tmp)
 	*j = UpJob(*tmp)
 	return nil
@@ -78,8 +79,9 @@ const (
 
 // DnsJob is verifying if a fqdn is looked up to the expected set of IPs
 type DnsJob struct {
-	Name string
-	Host string   `json:"host" yaml:"host"`
-	FQDN string   `json:"fqdn" yaml:"fqdn"`
-	IPs  []string `json:"ips" yaml:"ips"`
+	Name       string
+	Host       string            `json:"host" yaml:"host"`
+	FQDN       string            `json:"fqdn" yaml:"fqdn"`
+	IPs        []string          `json:"ips" yaml:"ips"`
+	CustomTags map[string]string `json:"tags,omitempty" yaml:"tags,omitempty"`
 }

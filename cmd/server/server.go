@@ -58,9 +58,11 @@ func init() {
 	serverCmd.PersistentFlags().String("jobs-config", "./config/jobs.yaml", "Descriptor file defining all checks")
 	serverCmd.PersistentFlags().Int("check-frequency", 10, "Default interval to execute job")
 
+	serverCmd.PersistentFlags().Bool("prometheus-enabled", true, "Enable Prometheus Endpoint")
 	serverCmd.PersistentFlags().String("prometheus-port", "9001", "Port exposed by prometheus")
 	serverCmd.PersistentFlags().String("prometheus-endpoint", "/metrics", "Prometheus Endpoint")
 
+	serverCmd.PersistentFlags().Bool("datadog-enabled", true, "Enable sending metrics to Datadog Endpoint")
 	serverCmd.PersistentFlags().String("datadog-endpoint", "https://api.datadoghq.com/api/v1/series", "Datadog Endpoint")
 	serverCmd.PersistentFlags().String("datadog-appKey", "", "Datadog APP-key")
 	serverCmd.PersistentFlags().String("datadog-apiKey", "", "Datadog API-Key")
@@ -73,11 +75,17 @@ func init() {
 	viper.BindPFlag("uptrack.check_frequency", serverCmd.PersistentFlags().Lookup("check-frequency"))
 	viper.BindEnv("uptrack.check_frequency", "UPTRACK_CHECK_FREQUENCY")
 
+	viper.BindPFlag("uptrack.prometheus.enabled", serverCmd.PersistentFlags().Lookup("prometheus-enabled"))
+	viper.BindEnv("uptrack.prometheus.enabled", "UPTRACK_PROMETHEUS_ENABLED")
+
 	viper.BindPFlag("uptrack.prometheus.port", serverCmd.PersistentFlags().Lookup("prometheus-port"))
 	viper.BindEnv("uptrack.prometheus.port", "UPTRACK_PROMETHEUS_PORT")
 
 	viper.BindPFlag("uptrack.prometheus.endpoint", serverCmd.PersistentFlags().Lookup("prometheus-endpoint"))
 	viper.BindEnv("uptrack.prometheus.endpoint", "UPTRACK_PROMETHEUS_ENDPOINT")
+
+	viper.BindPFlag("uptrack.datadog.enabled", serverCmd.PersistentFlags().Lookup("datadog-enabled"))
+	viper.BindEnv("uptrack.datadog.enabled", "UPTRACK_DATADOG_ENABLED")
 
 	viper.BindPFlag("uptrack.datadog.endpoint", serverCmd.PersistentFlags().Lookup("datadog-endpoint"))
 	viper.BindEnv("uptrack.datadog.endpoint", "UPTRACK_DATADOG_ENDPOINT")
