@@ -153,10 +153,11 @@ func dnsTags(descriptor job.Descriptor, dnsJob job.DnsJob, check string) dd.DDTa
 
 func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 
+	host, _ := upJob.HostString()
 	tags := dd.DDTags{
 		cons.ProjectName: descriptor.Name,
 		cons.JobName:     upJob.Name,
-		cons.Host:        upJob.Host,
+		cons.Host:        host,
 		cons.CheckName:   name,
 		cons.UrlString:   upJob.URL,
 		cons.ReqMethod:   string(upJob.Method),

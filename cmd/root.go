@@ -29,9 +29,25 @@ import (
 var (
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd = &cobra.Command{
-		Use:               "uptrack",
-		Short:             "track down your uptime",
-		Long:              `uptrack is a service to steadily check the uptime of your HTTP services`,
+		Use:   "uptrack",
+		Short: "track down your uptime",
+		Long: `**uptrack** is a service to steadily check the uptime of your HTTP services.
+You define **Jobs** (UpJobs/DNSJobs), consisting of checks currently available checks are:
+
+For UpJobs:
+* Connection to given url possible
+* Tme to certification expiry
+* Time to connect
+* Time to first byte
+* Request time
+* Received bytes
+
+For DNSJobs
+* Ratio of found ips
+
+Find a fully filled job configuration here: [Jobs configuration](../config/jobs.yaml)
+
+`,
 		DisableAutoGenTag: true,
 	}
 	cfgFile  string
@@ -60,7 +76,7 @@ func init() {
 	viper.SetConfigFile(viper.GetString("uptrack-config"))
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
-		log.Panic(fmt.Sprintf("Fatal error config file: %s \n", err))
+		log.Panic(fmt.Sprintf("Fatal error in config file: %s \n", err))
 	}
 
 	//Application Configuration via Environment Variables
