@@ -38,7 +38,7 @@ type UpJob struct {
 	URL                 string            `json:"url" yaml:"url"`
 	Method              Method            `json:"method,omitempty" yaml:"method,omitempty"`
 	Expected            int               `json:"expected_code,omitempty" yaml:"expected_code,omitempty"`
-	Header              http.Header       `json:"header,omitempty" yaml:"header,omitempty"`
+	Header              http.Header       `json:"headers,omitempty" yaml:"headers,omitempty"`
 	PlainBody           string            `json:"plain_body,omitempty" yaml:"plain_body,omitempty"`
 	Base64Body          string            `json:"base64_body,omitempty" yaml:"base64_body,omitempty"`
 	CheckSSL            bool              `json:"check_ssl,omitempty" yaml:"check_ssl,omitempty"`

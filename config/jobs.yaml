@@ -8,7 +8,7 @@
 #    host: 'google.com'                              ### Host of the url to job
 #    url: https://www.google.de                      ### The URL to check
 #    method: POST                                    ### The method used for the check (default: GET)
-#    header:                                         ### Headers for the request as map (string -> []string)
+#    headers:                                        ### Headers for the request as map (string -> []string)
 #      Authorization:
 #        - 'Basic abc=='
 #      Content-Type:
