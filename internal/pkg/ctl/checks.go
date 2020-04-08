@@ -22,8 +22,8 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 	clientTrace := trace(registry, jobName)
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
 	//Add headers
-	for k, v := range upJob.Header {
-		req.Header.Add(k, v[0])
+	for k, v := range upJob.Headers {
+		req.Header.Add(k, v)
 	}
 
 	t := transport()

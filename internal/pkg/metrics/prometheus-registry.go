@@ -73,10 +73,12 @@ func NewPrometheusRegistry(config config.Config, descriptor job.Descriptor) Regi
 }
 
 func checkCounter(project string, check string, upJob job.UpJob) prometheus.Counter {
+	host, _ := upJob.HostString()
+
 	labels := prometheus.Labels{
 		cons.ProjectName: project,
 		cons.JobName:     upJob.Name,
-		cons.Host:        upJob.Host,
+		cons.Host:        host,
 		cons.CheckName:   check,
 		cons.UrlString:   upJob.URL,
 	}
@@ -105,10 +107,12 @@ func checkCounter(project string, check string, upJob job.UpJob) prometheus.Coun
 //}
 
 func upGauge(project string, check string, upJob job.UpJob) prometheus.Gauge {
+	host, _ := upJob.HostString()
+
 	labels := prometheus.Labels{
 		cons.ProjectName: project,
 		cons.JobName:     upJob.Name,
-		cons.Host:        upJob.Host,
+		cons.Host:        host,
 		cons.CheckName:   check,
 		cons.UrlString:   upJob.URL,
 		cons.ReqMethod:   string(upJob.Method),

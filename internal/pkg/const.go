@@ -7,9 +7,9 @@ const (
 	CheckName   string = "check"
 	UrlString   string = "url"
 	ReqMethod   string = "request_method"
-	Host               = "host"
+	Host        string = "host"
 	FQDN        string = "FQDN"
-	ProjectName        = "project"
+	ProjectName string = "project"
 )
 
 //DataDog metric suffixes

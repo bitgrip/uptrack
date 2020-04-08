@@ -4,7 +4,23 @@ track down your uptime
 
 ### Synopsis
 
-uptrack is a service to steadily check the uptime of your HTTP services
+**uptrack** is a service to steadily check the uptime of your HTTP services.
+You define **Jobs** (UpJobs/DNSJobs), consisting of checks currently available checks are:
+
+For UpJobs:
+* Connection to given url possible
+* Tme to certification expiry
+* Time to connect
+* Time to first byte
+* Request time
+* Received bytes
+
+For DNSJobs
+* Ratio of found ips
+
+Find a fully filled job configuration here: [Jobs configuration](../config/jobs.yaml)
+
+
 
 ### Options
 
