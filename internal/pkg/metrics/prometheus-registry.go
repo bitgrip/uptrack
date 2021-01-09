@@ -47,13 +47,13 @@ func NewPrometheusRegistry(config config.Config, descriptor job.Descriptor) Regi
 	localMetricsForChecks := make(map[string]metrics, 5)
 	for name, upJob := range descriptor.UpJobs {
 		localMetricsForChecks[name] = metrics{
-			CanConnect:    checkCounter(projectName, cons.PromCanConnect, upJob),
-			CannotConnect: checkCounter(projectName, cons.PromCannotConnect, upJob),
-			SSLDaysLeft:   upGauge(projectName, cons.PromSSLDaysLeft, upJob),
-			ConnectTime:   upGauge(projectName, cons.PromConnectTime, upJob),
-			TTFB:          upGauge(projectName, cons.PromTTFB, upJob),
-			RequestTime:   upGauge(projectName, cons.PromRequestTime, upJob),
-			BytesReceived: upGauge(projectName, cons.PromBytesReceived, upJob),
+			CanConnect:    checkCounter(projectName, cons.PromCanConnect, *upJob),
+			CannotConnect: checkCounter(projectName, cons.PromCannotConnect, *upJob),
+			SSLDaysLeft:   upGauge(projectName, cons.PromSSLDaysLeft, *upJob),
+			ConnectTime:   upGauge(projectName, cons.PromConnectTime, *upJob),
+			TTFB:          upGauge(projectName, cons.PromTTFB, *upJob),
+			RequestTime:   upGauge(projectName, cons.PromRequestTime, *upJob),
+			BytesReceived: upGauge(projectName, cons.PromBytesReceived, *upJob),
 		}
 	}
 	localMetricsForDns := make(map[string]metrics, 5)

@@ -1,6 +1,7 @@
 package ctl
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -14,14 +15,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
+func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 	jobName := upJob.Name
 	url := upJob.URL
+	//Perform authentication via oauth client credentials flow
+	var bearerToken string
+	if upJob.BearerToken == "" {
+		bearerToken = getBearerToken(upJob)
+		upJob.BearerToken = bearerToken
+	} else {
+		bearerToken = upJob.BearerToken
+	}
+	if upJob.OauthClientCredentials != nil {
+	}
+
 	//prepare request
 	req, _ := http.NewRequest(string(upJob.Method), url, upJob.Body())
 	clientTrace := trace(registry, jobName)
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
 	//Add headers
+	//if bearerToken != "" {
+	//	req.Header.Add("Authorization", "Bearer "+bearerToken)
+	//}
 	for k, v := range upJob.Headers {
 		req.Header.Add(k, v)
 	}
@@ -65,6 +80,22 @@ func doUpChecks(registry metrics.Registry, upJob job.UpJob) {
 
 }
 
+func getBearerToken(upJob *job.UpJob) string {
+	authReq, _ := http.NewRequest("GET", upJob.OauthClientCredentials["auth_url"], upJob.Body())
+	//Add basic auth header
+	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(upJob.OauthClientCredentials["client_id"]+":"+upJob.OauthClientCredentials["client_secret"]))
+	authReq.Header.Add("Authorization", authHeader)
+
+	client := &http.Client{}
+	authResp, err := client.Do(authReq)
+	if err != nil {
+		logrus.Fatal(err)
+
+	}
+	bytes, _ := ioutil.ReadAll(authResp.Body)
+	return string(bytes)
+}
+
 func matchResponse(pattern string, bytes []byte, reverseMatch bool) bool {
 	regex, _ := regexp.Compile(pattern)
 	doesMatch := regex.Match(bytes)
@@ -81,7 +112,6 @@ func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
 
 	if err != nil {
 		logrus.Warn(fmt.Sprintf("Failed Request for job '%s'. msg: '%s' ", jobName, err))
-
 		return
 	}
 

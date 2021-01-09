@@ -58,13 +58,13 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 
 	for name, upJob := range descriptor.UpJobs {
 		localTagsForChecks[name] = ddTags{
-			CanConnect:    upTags(descriptor, upJob, cons.DDCanConnect),
-			CannotConnect: upTags(descriptor, upJob, cons.DDCannotConnect),
-			SSLDaysLeft:   upTags(descriptor, upJob, cons.DDSSLDaysLeft),
-			ConnectTime:   upTags(descriptor, upJob, cons.DDConnectTime),
-			TTFB:          upTags(descriptor, upJob, cons.DDTTFB),
-			RequestTime:   upTags(descriptor, upJob, cons.DDRequestTime),
-			BytesReceived: upTags(descriptor, upJob, cons.DDBytesReceived),
+			CanConnect:    upTags(descriptor, *upJob, cons.DDCanConnect),
+			CannotConnect: upTags(descriptor, *upJob, cons.DDCannotConnect),
+			SSLDaysLeft:   upTags(descriptor, *upJob, cons.DDSSLDaysLeft),
+			ConnectTime:   upTags(descriptor, *upJob, cons.DDConnectTime),
+			TTFB:          upTags(descriptor, *upJob, cons.DDTTFB),
+			RequestTime:   upTags(descriptor, *upJob, cons.DDRequestTime),
+			BytesReceived: upTags(descriptor, *upJob, cons.DDBytesReceived),
 		}
 
 		localKeysForChecks[name] = metricKeys{
