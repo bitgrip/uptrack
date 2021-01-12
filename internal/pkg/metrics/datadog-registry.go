@@ -68,13 +68,13 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 		}
 
 		localKeysForChecks[name] = metricKeys{
-			CanConnect:    keys(descriptor.Name, cons.DDCanConnect),
-			CannotConnect: keys(descriptor.Name, cons.DDCannotConnect),
-			SSLDaysLeft:   keys(descriptor.Name, cons.DDSSLDaysLeft),
-			ConnectTime:   keys(descriptor.Name, cons.DDConnectTime),
-			TTFB:          keys(descriptor.Name, cons.DDTTFB),
-			RequestTime:   keys(descriptor.Name, cons.DDRequestTime),
-			BytesReceived: keys(descriptor.Name, cons.DDBytesReceived),
+			CanConnect:    keys(cons.DDCanConnect),
+			CannotConnect: keys(cons.DDCannotConnect),
+			SSLDaysLeft:   keys(cons.DDSSLDaysLeft),
+			ConnectTime:   keys(cons.DDConnectTime),
+			TTFB:          keys(cons.DDTTFB),
+			RequestTime:   keys(cons.DDRequestTime),
+			BytesReceived: keys(cons.DDBytesReceived),
 		}
 
 	}
@@ -85,7 +85,7 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 		}
 
 		localKeysForChecks[name] = metricKeys{
-			DNSIpsRatio: keys(descriptor.Name, cons.DDFoundIps),
+			DNSIpsRatio: keys(cons.DDFoundIps),
 		}
 	}
 
@@ -168,9 +168,6 @@ func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 	}
 	return tags
 }
-func keys(project string, check string) string {
-
-	project = replaceAll(project, " +")
-
-	return fmt.Sprintf("%s.%s.%s", metricsRootName, project, check)
+func keys(check string) string {
+	return fmt.Sprintf("%s.%s", metricsRootName, check)
 }
