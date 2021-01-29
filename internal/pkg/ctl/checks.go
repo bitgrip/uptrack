@@ -1,13 +1,15 @@
 package ctl
 
 import (
-	"encoding/base64"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptrace"
+	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
@@ -18,25 +20,29 @@ import (
 func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 	jobName := upJob.Name
 	url := upJob.URL
-	//Perform authentication via oauth client credentials flow
-	var bearerToken string
-	if upJob.BearerToken == "" {
-		bearerToken = getBearerToken(upJob)
-		upJob.BearerToken = bearerToken
-	} else {
-		bearerToken = upJob.BearerToken
-	}
-	if upJob.OauthClientCredentials != nil {
-	}
 
 	//prepare request
 	req, _ := http.NewRequest(string(upJob.Method), url, upJob.Body())
 	clientTrace := trace(registry, jobName)
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
-	//Add headers
-	//if bearerToken != "" {
-	//	req.Header.Add("Authorization", "Bearer "+bearerToken)
-	//}
+
+	//config := clientcredentials.Config{}
+	//config.Client()
+	//https://www.oauth.com/oauth2-servers/access-tokens/client-credentials/
+	if upJob.Oauth.AuthUrl != "" {
+		//Perform authentication via oauth client credentials flow
+		bearerToken, err := getAccessToken(upJob)
+		if err != nil {
+			logrus.Error(fmt.Sprintf("Failed to receive Bearer Token for url: '%s' and auth_url: '%s'", upJob.URL, upJob.Oauth.AuthUrl))
+			logrus.Error(err)
+			return
+		}
+		//Add Bearer Token in Authorization Header
+		if bearerToken != "" {
+			req.Header.Add("Authorization", "Bearer "+bearerToken)
+		}
+	}
+
 	for k, v := range upJob.Headers {
 		req.Header.Add(k, v)
 	}
@@ -75,25 +81,68 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 		registry.IncCanConnect(jobName)
 
 	} else {
+		//count failed connections
 		registry.IncCanNotConnect(jobName)
 	}
 
 }
 
-func getBearerToken(upJob *job.UpJob) string {
-	authReq, _ := http.NewRequest("GET", upJob.OauthClientCredentials["auth_url"], upJob.Body())
-	//Add basic auth header
-	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(upJob.OauthClientCredentials["client_id"]+":"+upJob.OauthClientCredentials["client_secret"]))
-	authReq.Header.Add("Authorization", authHeader)
+//TODO Move this somewwhere else
+func getAccessToken(upJob *job.UpJob) (string, error) {
+	bearerToken := ""
+	oauthServerResponse := upJob.OauthServerResponse
 
-	client := &http.Client{}
-	authResp, err := client.Do(authReq)
-	if err != nil {
-		logrus.Fatal(err)
+	refreshToken := false
+	if oauthServerResponse.ExpiresAt != (time.Time{}) {
+		if oauthServerResponse.ExpiresAt.Sub(time.Now()).Seconds() < 10 {
+			refreshToken = true
+		}
 
 	}
-	bytes, _ := ioutil.ReadAll(authResp.Body)
-	return string(bytes)
+	if oauthServerResponse.AccessToken == "" {
+		refreshToken = true
+	}
+
+	if refreshToken {
+		values := url.Values{}
+		//load params from Oauth
+		for k, v := range upJob.Oauth.Params {
+			values.Set(k, v)
+		}
+		if oauthServerResponse.RefreshToken != "" {
+			values.Set("refresh_token", oauthServerResponse.RefreshToken)
+			values.Set("request_type", "refresh_token")
+		}
+
+		authReq, _ := http.NewRequest("POST", upJob.Oauth.AuthUrl, strings.NewReader(values.Encode()))
+
+		for k, v := range upJob.Oauth.Headers {
+			authReq.Header.Add(k, v)
+		}
+
+		client := &http.Client{}
+		authResp, err := client.Do(authReq)
+		if err != nil {
+			logrus.Fatal(err)
+			return "", err
+		}
+		if authResp.StatusCode != http.StatusOK {
+			errorMsg := fmt.Sprintf("Failed authentication on auth_url: '%s'", upJob.Oauth.AuthUrl)
+			logrus.Error(errorMsg)
+			return "", fmt.Errorf(errorMsg)
+
+		}
+		bytes, _ := ioutil.ReadAll(authResp.Body)
+		oauthResponse := job.OauthResponse{}
+
+		err = yaml.Unmarshal(bytes, &oauthResponse)
+
+		oauthServerResponse = oauthResponse
+		oauthServerResponse.ExpiresAt = time.Now().Add(time.Second * time.Duration(oauthServerResponse.ExpiresIn))
+	} else {
+		bearerToken = oauthServerResponse.AccessToken
+	}
+	return bearerToken, nil
 }
 
 func matchResponse(pattern string, bytes []byte, reverseMatch bool) bool {
