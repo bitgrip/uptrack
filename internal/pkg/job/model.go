@@ -67,9 +67,10 @@ type OauthResponse struct {
 	AccessToken  string `json:"access_token,omitempty" yaml:"access_token,omitempty"`
 	TokenType    string `json:"token_type,omitempty" yaml:"token_type,omitempty"`
 	ExpiresIn    int    `json:"expires_in,omitempty" yaml:"expires_in,omitempty"`
-	ExpiresAt    time.Time
 	RefreshToken string `json:"refresh_token,omitempty" yaml:"refresh_token,omitempty"`
 	Scope        string `json:"scope,omitempty" yaml:"scope,omitempty"`
+	ExpiresAt    time.Time
+	Refresh      bool
 }
 
 type UpJobs map[string]UpJob

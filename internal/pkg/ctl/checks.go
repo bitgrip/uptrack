@@ -2,14 +2,11 @@ package ctl
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptrace"
-	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
@@ -26,9 +23,6 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 	clientTrace := trace(registry, jobName)
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
 
-	//config := clientcredentials.Config{}
-	//config.Client()
-	//https://www.oauth.com/oauth2-servers/access-tokens/client-credentials/
 	if upJob.Oauth.AuthUrl != "" {
 		//Perform authentication via oauth client credentials flow
 		bearerToken, err := getAccessToken(upJob)
@@ -49,6 +43,7 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 
 	t := transport()
 	//measure request time
+	//start here
 	startReq := time.Now()
 	resp, err := t.RoundTrip(req)
 	if err != nil {
@@ -56,7 +51,19 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 		registry.IncCanNotConnect(jobName)
 		return
 	}
+	//end measure request time
 	endReq := time.Since(startReq)
+	up := resp.StatusCode == upJob.Expected
+
+	// if unexpected status code, check if bearer token expired
+	if !up {
+		if (upJob.Oauth.AuthUrl != "") && (resp.StatusCode == http.StatusUnauthorized) {
+			logrus.Warn(fmt.Sprintf("Invalid Token for Job: '%s', url: '%s' ", upJob.Name, upJob.URL))
+			upJob.OauthServerResponse.Refresh = true
+			return
+		}
+	}
+
 	registry.SetRequestTime(jobName, float64(endReq.Milliseconds()))
 
 	//time until expiry of ssl certs
@@ -65,7 +72,6 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 		registry.SetSSLDaysLeft(jobName, hours/24)
 	}
 
-	up := resp.StatusCode == upJob.Expected
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Fatal(err)
@@ -76,7 +82,6 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 		up = up && matchResponse(upJob.ContentMatch, bodyBytes, upJob.ReverseContentMatch)
 	}
 	if up {
-
 		//count successful connections
 		registry.IncCanConnect(jobName)
 
@@ -84,65 +89,6 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 		//count failed connections
 		registry.IncCanNotConnect(jobName)
 	}
-
-}
-
-//TODO Move this somewwhere else
-func getAccessToken(upJob *job.UpJob) (string, error) {
-	bearerToken := ""
-	oauthServerResponse := upJob.OauthServerResponse
-
-	refreshToken := false
-	if oauthServerResponse.ExpiresAt != (time.Time{}) {
-		if oauthServerResponse.ExpiresAt.Sub(time.Now()).Seconds() < 10 {
-			refreshToken = true
-		}
-
-	}
-	if oauthServerResponse.AccessToken == "" {
-		refreshToken = true
-	}
-
-	if refreshToken {
-		values := url.Values{}
-		//load params from Oauth
-		for k, v := range upJob.Oauth.Params {
-			values.Set(k, v)
-		}
-		if oauthServerResponse.RefreshToken != "" {
-			values.Set("refresh_token", oauthServerResponse.RefreshToken)
-			values.Set("request_type", "refresh_token")
-		}
-
-		authReq, _ := http.NewRequest("POST", upJob.Oauth.AuthUrl, strings.NewReader(values.Encode()))
-
-		for k, v := range upJob.Oauth.Headers {
-			authReq.Header.Add(k, v)
-		}
-
-		client := &http.Client{}
-		authResp, err := client.Do(authReq)
-		if err != nil {
-			logrus.Fatal(err)
-			return "", err
-		}
-		if authResp.StatusCode != http.StatusOK {
-			errorMsg := fmt.Sprintf("Failed authentication on auth_url: '%s'", upJob.Oauth.AuthUrl)
-			logrus.Error(errorMsg)
-			return "", fmt.Errorf(errorMsg)
-
-		}
-		bytes, _ := ioutil.ReadAll(authResp.Body)
-		oauthResponse := job.OauthResponse{}
-
-		err = yaml.Unmarshal(bytes, &oauthResponse)
-
-		oauthServerResponse = oauthResponse
-		oauthServerResponse.ExpiresAt = time.Now().Add(time.Second * time.Duration(oauthServerResponse.ExpiresIn))
-	} else {
-		bearerToken = oauthServerResponse.AccessToken
-	}
-	return bearerToken, nil
 }
 
 func matchResponse(pattern string, bytes []byte, reverseMatch bool) bool {

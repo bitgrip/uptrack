@@ -11,16 +11,27 @@
 #    headers:                                        ### Headers for the request as map (string -> string)
 #      Authorization: 'Basic abc=='
 #      Content-Type: 'application/json'
-#    plain_body: '{"code":"etanorm","count":15}'    ### The request body
-#    base64_body: '{"code":"etanorm","count":15}'   ### Base64 encoded request body
-#    expected_code: 301                             ### Expected response code of the check (default: 200)
-#    content_match: '.*"totalResults" : 9'          ### Regular Expression to be found in response body (omitted when empty)
-#    reverse_content_match: true                    ### Reverse behaviour of content_match logic (default: false)
-#    check_ssl: true                                ### Enables Validation of SSL certificates (default: true)
-#    tags:                                          ### Add custom tags here, add a map (string ->String)
+#    plain_body: '{"code":"etanorm","count":15}'     ### The request body
+#    base64_body: '{"code":"etanorm","count":15}'    ### Base64 encoded request body
+#    expected_code: 301                              ### Expected response code of the check (default: 200)
+#    content_match: '.*"totalResults" : 9'           ### Regular Expression to be found in response body (omitted when empty)
+#    reverse_content_match: true                     ### Reverse behaviour of content_match logic (default: false)
+#    check_ssl: true                                 ### Enables Validation of SSL certificates (default: true)
+#    tags:                                           ### Add custom tags here, add a map (string ->String)
 #      cloud_provider: azure
 #      kube_cluster_name: ksb-az-stage
 #      stage: stage
+#    Oauth:
+#      auth_url: www.auth.de                         ### https://www.oauth.com/oauth2-servers/access-tokens/client-credentials/
+#      headers:
+#        Accept: application/json                    ### headers for the auth server
+#      params:                                       ### params sent to auth server
+#        grant_type: client_credentials              ### working with client_credentials|password
+#        client_id: ichbinclient
+#        client_secret: password123
+#        username: name
+#        password: geheim
+#
 #
 #dns_jobs:                                          ### A list of DNSJobs, tracking the status for given url
 #  myDnsJob:                                        ### Name of this job
