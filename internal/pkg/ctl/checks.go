@@ -19,29 +19,15 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 	url := upJob.URL
 
 	//prepare request
-	req, _ := http.NewRequest(string(upJob.Method), url, upJob.Body())
+	req, _ := http.NewRequest(upJob.Method, url, upJob.Body())
 	clientTrace := trace(registry, jobName)
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &clientTrace))
-
-	if upJob.Oauth.AuthUrl != "" {
-		//Perform authentication via oauth client credentials flow
-		bearerToken, err := getAccessToken(upJob)
-		if err != nil {
-			logrus.Error(fmt.Sprintf("Failed to receive Bearer Token for url: '%s' and auth_url: '%s'", upJob.URL, upJob.Oauth.AuthUrl))
-			logrus.Error(err)
-			return
-		}
-		//Add Bearer Token in Authorization Header
-		if bearerToken != "" {
-			req.Header.Add("Authorization", "Bearer "+bearerToken)
-		}
-	}
 
 	for k, v := range upJob.Headers {
 		req.Header.Add(k, v)
 	}
 
-	t := transport()
+	t := transport(upJob)
 	//measure request time
 	//start here
 	startReq := time.Now()
@@ -59,7 +45,7 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 	if !up {
 		if (upJob.Oauth.AuthUrl != "") && (resp.StatusCode == http.StatusUnauthorized) {
 			logrus.Warn(fmt.Sprintf("Invalid Token for Job: '%s', url: '%s' ", upJob.Name, upJob.URL))
-			upJob.OauthServerResponse.Refresh = true
+			upJob.Context.OauthResponse.Refresh = true
 			return
 		}
 	}

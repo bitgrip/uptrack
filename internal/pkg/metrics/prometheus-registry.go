@@ -60,7 +60,7 @@ func NewPrometheusRegistry(config config.Config, descriptor job.Descriptor) Regi
 
 	for name, dnsJob := range descriptor.DNSJobs {
 		localMetricsForDns[name] = metrics{
-			DNSIpsRatio: dnsGauge(projectName, cons.PromFoundIps, dnsJob),
+			DNSIpsRatio: dnsGauge(projectName, cons.PromFoundIps, *dnsJob),
 		}
 	}
 

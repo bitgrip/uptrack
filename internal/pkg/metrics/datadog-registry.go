@@ -81,7 +81,7 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 
 	for name, dnsJob := range descriptor.DNSJobs {
 		localTagsForChecks[name] = ddTags{
-			DNSIpsRatio: dnsTags(descriptor, dnsJob, cons.DDFoundIps),
+			DNSIpsRatio: dnsTags(descriptor, *dnsJob, cons.DDFoundIps),
 		}
 
 		localKeysForChecks[name] = metricKeys{

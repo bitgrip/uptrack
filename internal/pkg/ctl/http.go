@@ -4,14 +4,9 @@ import (
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/job"
 	"bitbucket.org/bitgrip/uptrack/internal/pkg/metrics"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptrace"
-	"net/url"
-	"strings"
 	"time"
 )
 
@@ -30,14 +25,13 @@ func trace(registry metrics.Registry, name string) httptrace.ClientTrace {
 
 		GotFirstResponseByte: func() {
 			registry.SetTTFB(name, float64(time.Since(start).Milliseconds()))
-
 		},
 	}
 }
 
 //the purpose of a handwritten Transport is to have a clean uncached request in each iteration.
-func transport() http.Transport {
-	return http.Transport{
+func transport(job *job.UpJob) ChecksTripper {
+	t := http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
@@ -50,64 +44,33 @@ func transport() http.Transport {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
+
+	return ChecksTripper{Tripper: &t, Job: job}
+
 }
-func getAccessToken(upJob *job.UpJob) (string, error) {
-	bearerToken := ""
-	oauthServerResponse := &upJob.OauthServerResponse
 
-	refreshToken := false
-	if oauthServerResponse.ExpiresAt != (time.Time{}) {
-		if oauthServerResponse.ExpiresAt.Sub(time.Now()).Seconds() < 10 {
-			refreshToken = true
-		}
+// This type implements the http.RoundTripper interface
+type ChecksTripper struct {
+	Tripper http.RoundTripper
+	Job     *job.UpJob
+}
 
-	}
-	if oauthServerResponse.AccessToken == "" {
-		refreshToken = true
-	}
-	if oauthServerResponse.Refresh {
-		refreshToken = true
-		oauthServerResponse.Refresh = false
+func (rt ChecksTripper) RoundTrip(req *http.Request) (res *http.Response, e error) {
+
+	for _, interceptor := range rt.Job.RequestInterceptors {
+		req = interceptor.Intercept(req, rt.Job)
 	}
 
-	if refreshToken {
-		values := url.Values{}
-		//load params from Oauth
-		for k, v := range upJob.Oauth.Params {
-			values.Set(k, v)
-		}
-		if oauthServerResponse.RefreshToken != "" {
-			values.Set("refresh_token", oauthServerResponse.RefreshToken)
-			values.Set("request_type", "refresh_token")
-		}
+	fmt.Printf("Sending request to %v\n", req.URL)
 
-		authReq, _ := http.NewRequest("POST", upJob.Oauth.AuthUrl, strings.NewReader(values.Encode()))
+	// Send the request, get the response (or the error)
+	res, e = rt.Tripper.RoundTrip(req)
 
-		for k, v := range upJob.Oauth.Headers {
-			authReq.Header.Add(k, v)
-		}
-
-		client := &http.Client{}
-		authResp, err := client.Do(authReq)
-		if err != nil {
-			logrus.Fatal(err)
-			return "", err
-		}
-		if authResp.StatusCode != http.StatusOK {
-			errorMsg := fmt.Sprintf("Failed authentication on auth_url: '%s'", upJob.Oauth.AuthUrl)
-			logrus.Error(errorMsg)
-			return "", fmt.Errorf(errorMsg)
-
-		}
-		bytes, _ := ioutil.ReadAll(authResp.Body)
-		oauthResponse := job.OauthResponse{}
-
-		err = yaml.Unmarshal(bytes, &oauthResponse)
-
-		*oauthServerResponse = oauthResponse
-		oauthServerResponse.ExpiresAt = time.Now().Add(time.Second * time.Duration(oauthServerResponse.ExpiresIn))
+	// Handle the result.
+	if e != nil {
+		fmt.Printf("Error: %v", e)
+	} else {
+		fmt.Printf("Received %v response\n", res.Status)
 	}
-	bearerToken = oauthServerResponse.AccessToken
-
-	return bearerToken, nil
+	return
 }

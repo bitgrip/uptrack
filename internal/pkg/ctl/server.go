@@ -39,6 +39,7 @@ func StartUpTrackServer(config config.Config) error {
 	port := strconv.Itoa(config.PrometheusPort())
 	promUri := fmt.Sprintf(":" + port + endpoint)
 	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
+
 	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
 		logrus.Warn("No Jobs defined or not properly parsed from", config.JobConfigDir())
 		return nil
@@ -112,7 +113,7 @@ func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval tim
 		}
 
 		for _, dnsJob := range descriptor.DNSJobs {
-			doDnsChecks(registry, dnsJob)
+			doDnsChecks(registry, *dnsJob)
 		}
 		duration := startJobs.Add(interval).Sub(time.Now())
 
