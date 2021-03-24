@@ -86,11 +86,14 @@ func StartUpTrackServer(config config.Config) error {
 	}
 	logrus.Info(info)
 
-	go runJobs(&descriptor, registry, config.CheckFrequency())
-
-	for {
-		time.Sleep(config.CheckFrequency())
+	errC := runJobs(&descriptor, registry, config.CheckFrequency())
+	select {
+	case err := <-errC:
+		logrus.Error(fmt.Sprintf("Error during Job execution: %s. Retrying", err))
+		errC = runJobs(&descriptor, registry, config.CheckFrequency())
 	}
+	return nil
+
 }
 
 func startPrometheus(endpoint string, port string) {
@@ -102,18 +105,27 @@ func startPrometheus(endpoint string, port string) {
 	}
 }
 
-func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval time.Duration) {
+func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval time.Duration) (errC chan error) {
+	errC = make(chan error)
 	for {
 		//having one upJob iteration per interval
 		startJobs := time.Now()
 		//count iterations
 		jobs := &descriptor.UpJobs
 		for key, _ := range *jobs {
-			doUpChecks(registry, (*jobs)[key])
+			err := doUpChecks(registry, (*jobs)[key])
+			if err != nil {
+				errC <- err
+				return
+			}
 		}
 
 		for _, dnsJob := range descriptor.DNSJobs {
-			doDnsChecks(registry, *dnsJob)
+			err := doDnsChecks(registry, *dnsJob)
+			if err != nil {
+				errC <- err
+				return
+			}
 		}
 		duration := startJobs.Add(interval).Sub(time.Now())
 
@@ -124,5 +136,4 @@ func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval tim
 		time.Sleep(duration)
 
 	}
-
 }

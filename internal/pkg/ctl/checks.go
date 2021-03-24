@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
+func doUpChecks(registry metrics.Registry, upJob *job.UpJob) (err error) {
 	jobName := upJob.Name
 	url := upJob.URL
 
@@ -75,6 +75,7 @@ func doUpChecks(registry metrics.Registry, upJob *job.UpJob) {
 		//count failed connections
 		registry.IncCanNotConnect(jobName)
 	}
+	return
 }
 
 func matchResponse(pattern string, bytes []byte, reverseMatch bool) bool {
@@ -86,7 +87,7 @@ func matchResponse(pattern string, bytes []byte, reverseMatch bool) bool {
 	return doesMatch
 }
 
-func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
+func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) (err error) {
 
 	jobName := dnsJob.Name
 	actIps, err := net.LookupIP(dnsJob.FQDN)
@@ -107,6 +108,7 @@ func doDnsChecks(registry metrics.Registry, dnsJob job.DnsJob) {
 		registry.SetIpsRatio(jobName, 0)
 	}
 	registry.SetIpsRatio(jobName, float64(len(intersecIps)/len(expIps)))
+	return
 }
 
 func GetIntersecting(expIps []string, actIps []string) []string {
