@@ -1,14 +1,21 @@
-####################################
-# Documented instance parameters
-###################################
-
 #project: Big_Company                                ### Project Name, i.e. customer name
 #up_jobs:                                            ### A list of UpJobs, tracking the status for given url
 #  myUpJob:                                          ### Name of this job
 #    host: 'google.com'                              ### Host of the url of this job (default: host retrieved from url)
 #    url: https://www.google.de                      ### The URL to check
-#    method: POST                                    ### The method used for the check (default: GET)
-#    headers:                                        ### Headers for the request as map (string -> string)
+#    Oauth:
+#      auth_url: https://preview-occ-ci2.ksb.bitgrip.berlin/authorizationserver/oauth/token
+#      headers:
+#        Accept: application/json
+#        Content-Type: application/x-www-form-urlencoded
+#      params:
+#        grant_type: client_credentials
+#        client_id: web_client
+#        client_secret: ksbweb1@stag
+#        username: ksbtestcustomer
+#        password: password1!
+#    method: POST                                   ### The method used for the check (default: GET)
+#    headers:                                       ### Headers for the request as map (string -> string)
 #      Authorization: 'Basic abc=='
 #      Content-Type: 'application/json'
 #    plain_body: '{"code":"etanorm","count":15}'    ### The request body

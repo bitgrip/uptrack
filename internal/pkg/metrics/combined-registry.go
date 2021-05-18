@@ -14,7 +14,7 @@ func (r *combinedRegistry) Enabled() bool {
 	return enabled
 }
 
-func NewCombinedRegistry(registries ...Registry) Registry {
+func NewCombinedRegistry(registries []Registry) Registry {
 	return &combinedRegistry{
 		registries: registries,
 	}

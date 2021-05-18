@@ -35,38 +35,41 @@ import (
 // * Start and Listening the UpTrack Server
 func StartUpTrackServer(config config.Config) error {
 	logrus.Info("Start UpTrack server")
-
+	endpoint := config.PrometheusEndpoint()
+	port := strconv.Itoa(config.PrometheusPort())
+	promUri := fmt.Sprintf(":" + port + endpoint)
 	descriptor, _ := job.DescriptorFromFile(config.JobConfigDir())
+
 	if descriptor.DNSJobs == nil && descriptor.UpJobs == nil {
 		logrus.Warn("No Jobs defined or not properly parsed from", config.JobConfigDir())
 		return nil
 	}
-	registry := metrics.NewCombinedRegistry(
-		metrics.NewPrometheusRegistry(config, descriptor),
-		metrics.NewDatadogRegistry(config, descriptor),
-	)
-	if !registry.Enabled() {
-		logrus.Info(fmt.Sprintf("No enabled registries found. \n Exiting."))
-		return nil
-	}
-
-	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
-
-	endpoint := config.PrometheusEndpoint()
-	port := strconv.Itoa(config.PrometheusPort())
-	promUri := fmt.Sprintf(":" + port + endpoint)
+	var registries []metrics.Registry
 
 	if config.PrometheusEnabled() {
 		logrus.Info(fmt.Sprintf("Prometheus metrics available at  %v", promUri))
+		registries = append(registries, metrics.NewPrometheusRegistry(config, descriptor))
+		go startPrometheus(endpoint, port)
+
 	} else {
 		logrus.Info(fmt.Sprintf("Prometheus Endpoint is disabled"))
 	}
 	if config.DDEnabled() {
 		logrus.Info(fmt.Sprintf("Initialize DataDog Registry for endpoint '%s'", config.DDEndpoint()))
 		logrus.Info(fmt.Sprintf("DataDog Interval: '%ds'", int(config.DDInterval().Seconds())))
+		registries = append(registries, metrics.NewDatadogRegistry(config, descriptor))
+
 	} else {
 		logrus.Info(fmt.Sprintf("Sending Metrics to DataDog is disabled"))
 	}
+
+	registry := metrics.NewCombinedRegistry(registries)
+	if !registry.Enabled() {
+		logrus.Info(fmt.Sprintf("No enabled registries found. \n Exiting."))
+		return nil
+	}
+
+	logrus.Info(fmt.Sprintf("Load Jobs from %s\n", config.JobConfigDir()))
 
 	logrus.Info(fmt.Sprintf("Use check frequency %v", config.CheckFrequency()))
 	info := "Initialized UpChecks:\n"
@@ -83,29 +86,46 @@ func StartUpTrackServer(config config.Config) error {
 	}
 	logrus.Info(info)
 
-	go runJobs(descriptor, registry, config.CheckFrequency())
+	errC := runJobs(&descriptor, registry, config.CheckFrequency())
+	select {
+	case err := <-errC:
+		logrus.Error(fmt.Sprintf("Error during Job execution: %s. Retrying", err))
+		errC = runJobs(&descriptor, registry, config.CheckFrequency())
+	}
+	return nil
 
-	// starting server with prometheus endpoint
+}
+
+func startPrometheus(endpoint string, port string) {
 	http.Handle(endpoint, promhttp.Handler())
 
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	return nil
 }
 
-func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time.Duration) {
+func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval time.Duration) (errC chan error) {
+	errC = make(chan error)
 	for {
 		//having one upJob iteration per interval
 		startJobs := time.Now()
 		//count iterations
-		for _, upJob := range descriptor.UpJobs {
-			doUpChecks(registry, upJob)
+		jobs := &descriptor.UpJobs
+		for key, _ := range *jobs {
+			err := doUpChecks(registry, (*jobs)[key])
+			if err != nil {
+				errC <- err
+				return
+			}
 		}
 
 		for _, dnsJob := range descriptor.DNSJobs {
-			doDnsChecks(registry, dnsJob)
+			err := doDnsChecks(registry, *dnsJob)
+			if err != nil {
+				errC <- err
+				return
+			}
 		}
 		duration := startJobs.Add(interval).Sub(time.Now())
 
@@ -116,5 +136,4 @@ func runJobs(descriptor job.Descriptor, registry metrics.Registry, interval time
 		time.Sleep(duration)
 
 	}
-
 }

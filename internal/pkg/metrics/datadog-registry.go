@@ -58,34 +58,34 @@ func NewDatadogRegistry(config config.Config, descriptor job.Descriptor) Registr
 
 	for name, upJob := range descriptor.UpJobs {
 		localTagsForChecks[name] = ddTags{
-			CanConnect:    upTags(descriptor, upJob, cons.DDCanConnect),
-			CannotConnect: upTags(descriptor, upJob, cons.DDCannotConnect),
-			SSLDaysLeft:   upTags(descriptor, upJob, cons.DDSSLDaysLeft),
-			ConnectTime:   upTags(descriptor, upJob, cons.DDConnectTime),
-			TTFB:          upTags(descriptor, upJob, cons.DDTTFB),
-			RequestTime:   upTags(descriptor, upJob, cons.DDRequestTime),
-			BytesReceived: upTags(descriptor, upJob, cons.DDBytesReceived),
+			CanConnect:    upTags(descriptor, *upJob, cons.DDCanConnect),
+			CannotConnect: upTags(descriptor, *upJob, cons.DDCannotConnect),
+			SSLDaysLeft:   upTags(descriptor, *upJob, cons.DDSSLDaysLeft),
+			ConnectTime:   upTags(descriptor, *upJob, cons.DDConnectTime),
+			TTFB:          upTags(descriptor, *upJob, cons.DDTTFB),
+			RequestTime:   upTags(descriptor, *upJob, cons.DDRequestTime),
+			BytesReceived: upTags(descriptor, *upJob, cons.DDBytesReceived),
 		}
 
 		localKeysForChecks[name] = metricKeys{
-			CanConnect:    keys(descriptor.Name, cons.DDCanConnect),
-			CannotConnect: keys(descriptor.Name, cons.DDCannotConnect),
-			SSLDaysLeft:   keys(descriptor.Name, cons.DDSSLDaysLeft),
-			ConnectTime:   keys(descriptor.Name, cons.DDConnectTime),
-			TTFB:          keys(descriptor.Name, cons.DDTTFB),
-			RequestTime:   keys(descriptor.Name, cons.DDRequestTime),
-			BytesReceived: keys(descriptor.Name, cons.DDBytesReceived),
+			CanConnect:    keys(cons.DDCanConnect),
+			CannotConnect: keys(cons.DDCannotConnect),
+			SSLDaysLeft:   keys(cons.DDSSLDaysLeft),
+			ConnectTime:   keys(cons.DDConnectTime),
+			TTFB:          keys(cons.DDTTFB),
+			RequestTime:   keys(cons.DDRequestTime),
+			BytesReceived: keys(cons.DDBytesReceived),
 		}
 
 	}
 
 	for name, dnsJob := range descriptor.DNSJobs {
 		localTagsForChecks[name] = ddTags{
-			DNSIpsRatio: dnsTags(descriptor, dnsJob, cons.DDFoundIps),
+			DNSIpsRatio: dnsTags(descriptor, *dnsJob, cons.DDFoundIps),
 		}
 
 		localKeysForChecks[name] = metricKeys{
-			DNSIpsRatio: keys(descriptor.Name, cons.DDFoundIps),
+			DNSIpsRatio: keys(cons.DDFoundIps),
 		}
 	}
 
@@ -168,9 +168,6 @@ func upTags(descriptor job.Descriptor, upJob job.UpJob, name string) dd.DDTags {
 	}
 	return tags
 }
-func keys(project string, check string) string {
-
-	project = replaceAll(project, " +")
-
-	return fmt.Sprintf("%s.%s.%s", metricsRootName, project, check)
+func keys(check string) string {
+	return fmt.Sprintf("%s.%s", metricsRootName, check)
 }

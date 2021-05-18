@@ -13,23 +13,23 @@ import (
 import "strings"
 
 // Body is taken from plain body or transformed from base64 body if exists
-func (j *UpJob) Body() io.Reader {
-	if len(j.PlainBody) > 0 {
-		return strings.NewReader(j.PlainBody)
+func (job *UpJob) Body() io.Reader {
+	if len(job.PlainBody) > 0 {
+		return strings.NewReader(job.PlainBody)
 	}
-	if len(j.Base64Body) > 0 {
-		decoded, _ := base64.StdEncoding.DecodeString(j.Base64Body)
+	if len(job.Base64Body) > 0 {
+		decoded, _ := base64.StdEncoding.DecodeString(job.Base64Body)
 		return strings.NewReader(string(decoded))
 	}
 	return nil
 }
-func (j *UpJob) HostString() (string, error) {
-	if len(j.Host) > 0 {
-		return j.Host, nil
+func (job *UpJob) HostString() (string, error) {
+	if len(job.Host) > 0 {
+		return job.Host, nil
 	} else {
-		url, err := url.Parse(j.URL)
+		url, err := url.Parse(job.URL)
 		if err != nil {
-			log.Panic(fmt.Sprintf("Fatal error: %s \n for url : %s in Job %s", err, j.URL, j.Name))
+			log.Panic(fmt.Sprintf("Fatal error: %s \n for url : %s in Job %s", err, job.URL, job.Name))
 			return "", err
 		}
 		host := url.Host

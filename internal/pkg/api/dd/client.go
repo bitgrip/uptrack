@@ -72,6 +72,7 @@ func NewClient(api API, in float64) *Client {
 func (c *Client) Gauge(jobName string, checkName string, value float64, tags DDTags) error {
 	c.Lock()
 	m, ok := c.metricsMap[jobName+checkName]
+	// if not available, create a new Metric
 	if !ok {
 		m = NewMetric(checkName, tags[cons.Host], TypeGauge, tags.ToTagList())
 		c.Series = append(c.Series, m)
