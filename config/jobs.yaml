@@ -4,16 +4,16 @@
 #    host: 'google.com'                              ### Host of the url of this job (default: host retrieved from url)
 #    url: https://www.google.de                      ### The URL to check
 #    Oauth:
-#      auth_url: https://preview-occ-ci2.ksb.bitgrip.berlin/authorizationserver/oauth/token
+#      auth_url: https://authserver.berlin
 #      headers:
 #        Accept: application/json
 #        Content-Type: application/x-www-form-urlencoded
 #      params:
-#        grant_type: client_credentials
+#        grant_type: client_credentials              ### `client_credentials` OR `password`
 #        client_id: web_client
 #        client_secret: ksbweb1@stag
-#        username: ksbtestcustomer
-#        password: password1!
+#        username: admin
+#        password: secret
 #    method: POST                                   ### The method used for the check (default: GET)
 #    headers:                                       ### Headers for the request as map (string -> string)
 #      Authorization: 'Basic abc=='
