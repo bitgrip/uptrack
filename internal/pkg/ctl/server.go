@@ -86,13 +86,19 @@ func StartUpTrackServer(config config.Config) error {
 	}
 	logrus.Info(info)
 
-	errC := runJobs(&descriptor, registry, config.CheckFrequency())
-	select {
-	case err := <-errC:
-		logrus.Error(fmt.Sprintf("Error during Job execution: %s. Retrying", err))
-		errC = runJobs(&descriptor, registry, config.CheckFrequency())
+	errC := make(chan error)
+	go runJobs(&descriptor, registry, config.CheckFrequency(), errC)
+
+	for {
+		select {
+		case err := <-errC:
+			logrus.Error(fmt.Sprintf("Error during Job execution: %s. Retrying in %s", err, config.CheckFrequency()))
+			time.Sleep(config.CheckFrequency())
+			errC = make(chan error)
+			go runJobs(&descriptor, registry, config.CheckFrequency(), errC)
+		}
+
 	}
-	return nil
 
 }
 
@@ -105,8 +111,7 @@ func startPrometheus(endpoint string, port string) {
 	}
 }
 
-func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval time.Duration) (errC chan error) {
-	errC = make(chan error)
+func runJobs(descriptor *job.Descriptor, registry metrics.Registry, interval time.Duration, errC chan error) {
 	for {
 		//having one upJob iteration per interval
 		startJobs := time.Now()
